@@ -1,6 +1,6 @@
 #pragma once
 
-#include "HexPosition.h"
+#include "HexPosition.hpp"
 
 class Node {
 

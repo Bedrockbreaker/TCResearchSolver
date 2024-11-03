@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Node.h"
+#include "Node.hpp"
 
 int main(int argc, char* argv[]) {
 
