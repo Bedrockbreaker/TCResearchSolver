@@ -4,6 +4,8 @@ project(TCResearchSolver VERSION 1.0.0)
 add_library(CPP23 INTERFACE)
 target_compile_features(CPP23 INTERFACE cxx_std_23)
 
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib/rapidyaml" ryml)
+
 add_executable(TCResearchSolver
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/HexPosition.cpp"
@@ -11,6 +13,7 @@ add_executable(TCResearchSolver
 )
 target_include_directories(TCResearchSolver PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(TCResearchSolver PUBLIC CPP23)
+target_link_libraries(TCResearchSolver PRIVATE ryml::ryml)
 
 install(TARGETS TCResearchSolver DESTINATION bin)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION .)
