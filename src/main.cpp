@@ -1,12 +1,15 @@
 #include <iostream>
 
+#include "Config.hpp"
 #include "Node.hpp"
 
 int main(int argc, char* argv[]) {
+	if (argc != 2) {
+		std::cerr << "Usage: " << argv[0] << " <config file>" << std::endl;
+		return 1;
+	}
 
-	Node node(0, 0, 0);
+	std::string configFile = argv[1];
 
-	HexPosition position = node.getPosition();
-
-	std::cout << position.i << " " << position.j << " " << position.k << std::endl;
+	Config config(configFile);
 }
