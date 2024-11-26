@@ -1,7 +1,5 @@
 #include "Aspect.hpp"
 
-#include <iostream>
-
 short Aspect::count = 0;
 
 Aspect::Aspect() : id(count++), parent1(-1), parent2(-1) {}
