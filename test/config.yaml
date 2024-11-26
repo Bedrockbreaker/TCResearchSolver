@@ -1,23 +1,23 @@
 aspects:
   # Tier 0 (Primal)
   aer:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   aqua:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   ignis:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   ordo:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   perditio:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   terra:
-    parent1: null
-    parent2: null
+    parent1:
+    parent2:
   # Tier 1
   gelum:
     parent1: ignis
@@ -157,17 +157,8 @@ grid-size: 4
 
 static-nodes:
   - aspect: null
-    position:
-      - 0
-      - 0
-      - 0
+    position: [0, 0, 0]
   - aspect: ignis
-    position:
-      - -1
-      - 0
-      - 1
+    position: [-1, 0, 1]
   - aspect: victus
-    position:
-      - 2
-      - 1
-      - -3
+    position: [2, 1, -3]
