@@ -4,12 +4,13 @@
 
 #include "Config.hpp"
 
-Config::Config(std::string filename) {
+Config::Config() {}
+
+void Config::Parse(const std::string& filename) {
 	std::ifstream configFile(filename);
 
 	if (!configFile.is_open()) {
-		std::cerr << "Could not open config file " << filename << std::endl;
-		return;
+		throw std::runtime_error("Could not open config file " + filename);
 	}
 
 	std::stringstream buffer;
@@ -22,40 +23,34 @@ Config::Config(std::string filename) {
 	ryml::ConstNodeRef aspectNodes = AssertGetNode(root, "aspects", NodeType::Map);
 
 	for (const auto& aspectNode : aspectNodes.children()) {
-		Aspect aspect = AssertGetAspect(aspectNode);
-		aspects.try_emplace(GetNodeName(aspectNode), aspect);
+		AssertCreateAspect(aspectNode);
 	}
 
 	for (const auto& aspect : aspects) {
 		std::cout
-			<< aspect.first << " (" << aspect.second.getId() << ") = "
-			<< GetAspectName(aspect.second.getParent1()) << " + "
-			<< GetAspectName(aspect.second.getParent2()) << std::endl;
+			<< aspect.first << " " << aspect.second.getName()
+			<< " (" << aspect.second.getTier() << ") x"
+			<< aspect.second.getAmount();
+		
+		if (aspect.second.getParent1() == nullptr) {
+			std::cout << "\n";
+			continue;
+		}
+		
+		std::cout
+			<< " = " << aspect.second.getParent1()->getName() << " + "
+			<< aspect.second.getParent2()->getName() << "\n";
 	}
 }
 
-Config::AspectMap::const_iterator Config::GetAspectIterator(short id) const {
-	return std::find_if(
-		aspects.begin(),
-		aspects.end(),
-		[id](const auto& aspect) {
-			return aspect.second.getId() == id;
-		}
-	);
-}
+const Aspect* Config::GetAspect(std::string name) const {
+	auto nameIt = aspectNames.find(name);
+	if (nameIt == aspectNames.end()) return nullptr;
 
-std::optional<Aspect> Config::GetAspect(short id) const {
-	const auto it = GetAspectIterator(id);
+	auto aspectIt = aspects.find(nameIt->second);
+	if (aspectIt == aspects.end()) return nullptr;
 
-	return it == aspects.end()
-		? std::nullopt
-		: std::optional<Aspect>(it->second);
-}
-
-std::string Config::GetAspectName(short id) const {
-	const auto it = GetAspectIterator(id);
-
-	return it == aspects.end() ? "" : it->first;
+	return &aspectIt->second;
 }
 
 ryml::ConstNodeRef Config::AssertGetNode(
@@ -64,18 +59,17 @@ ryml::ConstNodeRef Config::AssertGetNode(
 	NodeType type
 ) const {
 	if (!parent.is_map()) {
-		std::cerr
-			<< "Expected \"" << GetNodeName(parent)
-			<< "\" to be a map" << std::endl;
-		exit(1);
+		throw std::runtime_error(
+			"Expected \"" + GetNodeName(parent) + "\" to be a map"
+		);
 	}
 
 	if (!parent.has_child(key)) {
-		std::cerr
-			<< "Could not find \"" << key
-			<< "\" in " << GetNodeName(parent)
-			<< std::endl;
-		exit(1);
+		throw std::runtime_error(
+			"Could not find \""
+			+ std::string(std::string_view(key))
+			+ "\" in " + GetNodeName(parent)
+		);
 	}
 
 	ryml::ConstNodeRef child = parent[key];
@@ -86,40 +80,52 @@ ryml::ConstNodeRef Config::AssertGetNode(
 	switch(type) {
 		case NodeType::Map:
 			if (isMap) break;
-			std::cerr
-				<< "Expected \"" << GetNodeName(child)
-				<< "\" to be a map" << std::endl;
-			exit(1);
+			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a map");
 		case NodeType::Sequence:
 			if (isSeq) break;
-			std::cerr
-				<< "Expected \"" << GetNodeName(child)
-				<< "\" to be a sequence" << std::endl;
-			exit(1);
+			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a sequence");
 		case NodeType::Value:
 			if (!isMap && !isSeq) break;
-			std::cerr
-				<< "Expected \"" << GetNodeName(child)
-				<< "\" to be a value" << std::endl;
-			exit(1);
+			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a value");
 	}
 
 	return parent[key];
 }
 
-Aspect Config::AssertGetAspect(const ryml::ConstNodeRef& node) const {
+Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	ryml::ConstNodeRef parent1Node = AssertGetNode(node, "parent1", NodeType::Value);
 	ryml::ConstNodeRef parent2Node = AssertGetNode(node, "parent2", NodeType::Value);
 
+	std::string aspectName = GetNodeName(node);
+
 	if (parent1Node.val_is_null() != parent2Node.val_is_null()) {
-		std::cerr
-			<< "Expected both parents of \"" << GetNodeName(node)
-			<< "\" to be null or non-null" << std::endl;
-		exit(1);
+		throw std::runtime_error(
+			"Expected both parents of \""
+			+ aspectName
+			+ "\" to be null or non-null"
+		);
+	}
+
+	int amount = -1;
+	if (node.has_child("amount")) {
+		ryml::ConstNodeRef amountNode = AssertGetNode(node, "amount", NodeType::Value);
+		amountNode >> amount;
+	}
+
+	if (amount < -1) {
+		throw std::runtime_error(
+			"Expected amount of \"" + aspectName + "\" to be >= -1"
+		);
 	}
 
 	if (parent1Node.val_is_null()) {
-		return Aspect();
+		Aspect aspect(aspectName, amount);
+		auto [aspectIt, inserted] = aspects.try_emplace(aspect.getId(), std::move(aspect));
+		if (!inserted) {
+			throw std::runtime_error("Aspect \"" + aspectName + "\" already exists");
+		}
+		aspectNames.try_emplace(aspectName, aspectIt->first);
+		return aspectIt->second;
 	}
 
 	std::string parent1Name;
@@ -127,23 +133,36 @@ Aspect Config::AssertGetAspect(const ryml::ConstNodeRef& node) const {
 	parent1Node >> parent1Name;
 	parent2Node >> parent2Name;
 
-	if (!aspects.contains(parent1Name)) {
-		std::cerr
-			<< "Could not find parent1 aspect \"" << parent1Name
-			<< "\" for " << GetNodeName(node)
-			<< std::endl;
-		exit(1);
+	auto parent1It = aspectNames.find(parent1Name);
+	auto parent2It = aspectNames.find(parent2Name);
+
+	if (parent1It == aspectNames.end()) {
+		throw std::runtime_error(
+			"Could not find parent1 aspect \""
+			+ parent1Name + "\" for " + aspectName
+		);
 	}
 
-	if (!aspects.contains(parent2Name)) {
-		std::cerr
-			<< "Could not find parent2 aspect \"" << parent2Name
-			<< "\" for " << GetNodeName(node)
-			<< std::endl;
-		exit(1);
+	if (parent2It == aspectNames.end()) {
+		throw std::runtime_error(
+			"Could not find parent2 aspect \""
+			+ parent2Name + "\" for " + aspectName
+		);
 	}
 
-	return Aspect(aspects.at(parent1Name).getId(), aspects.at(parent2Name).getId());
+	Aspect aspect(
+		aspectName,
+		&aspects.at(parent1It->second),
+		&aspects.at(parent2It->second),
+		amount
+	);
+	auto [aspectIt, inserted] = aspects.try_emplace(aspect.getId(), std::move(aspect));
+	if (!inserted) {
+		throw std::runtime_error("Aspect \"" + aspectName + "\" already exists");
+	}
+	aspectNames.try_emplace(aspectName, aspectIt->first);
+
+	return aspectIt->second;
 }
 
 std::string Config::GetNodeName(const ryml::ConstNodeRef& node) const {

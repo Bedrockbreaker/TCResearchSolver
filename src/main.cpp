@@ -11,5 +11,6 @@ int main(int argc, char* argv[]) {
 
 	std::string configFile = argv[1];
 
-	Config config(configFile);
+	Config config;
+	config.Parse(configFile);
 }

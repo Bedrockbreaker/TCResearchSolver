@@ -1,14 +1,17 @@
 aspects:
-  # Tier 0 (Primal)
+  # Tier 1 (Primal)
   aer:
     parent1:
     parent2:
+    amount: -1
   aqua:
     parent1:
     parent2:
+    amount: 0
   ignis:
     parent1:
     parent2:
+    amount: 42
   ordo:
     parent1:
     parent2:
@@ -18,7 +21,7 @@ aspects:
   terra:
     parent1:
     parent2:
-  # Tier 1
+  # Tier 2
   gelum:
     parent1: ignis
     parent2: perditio
@@ -49,7 +52,7 @@ aspects:
   vitreus:
     parent1: terra
     parent2: ordo
-  # Tier 2
+  # Tier 3
   bestia:
     parent1: motus
     parent2: victus
@@ -86,7 +89,7 @@ aspects:
   volatus:
     parent1: aer
     parent2: motus
-  # Tier 3
+  # Tier 4
   alienis:
     parent1: tenebrae
     parent2: vacuos
@@ -108,18 +111,18 @@ aspects:
   vitium:
     parent1: perditio
     parent2: praecantatio
-  # Tier 4
+  # Tier 5
   cognitio:
     parent1: ignis
     parent2: spiritus
   sensus:
     parent1: aer
     parent2: spiritus
-  # Tier 5
+  # Tier 6
   humanus:
     parent1: bestia
     parent2: cognitio
-  # Tier 6
+  # Tier 7
   instrumentum:
     parent1: ordo
     parent2: humanus
@@ -132,7 +135,6 @@ aspects:
   perfodio:
     parent1: terra
     parent2: humanus
-  # Tier 7
   # Tier 8
   fabrico:
     parent1: instrumentum

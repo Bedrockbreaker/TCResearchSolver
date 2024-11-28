@@ -9,14 +9,11 @@
 
 class Config {
 
-	using AspectMap = std::unordered_map<std::string, Aspect>;
-
 private:
-	AspectMap aspects;
-	
-	AspectMap::const_iterator GetAspectIterator(short id) const;
-	std::optional<Aspect> GetAspect(short id) const;
-	std::string GetAspectName(short id) const;
+	std::unordered_map<short, Aspect> aspects;
+	std::unordered_map<std::string, short> aspectNames;
+
+	const Aspect* GetAspect(std::string name) const;
 
 	ryml::ConstNodeRef AssertGetNode(
 		const ryml::ConstNodeRef& parent,
@@ -24,7 +21,7 @@ private:
 		NodeType type
 	) const;
 
-	Aspect AssertGetAspect(const ryml::ConstNodeRef& node) const;
+	Aspect& AssertCreateAspect(const ryml::ConstNodeRef& node);
 
 	std::string GetNodeName(const ryml::ConstNodeRef& node) const;
 
@@ -35,6 +32,8 @@ private:
 	) const;
 
 public:
-	Config(std::string filename);
+	Config();
+
+	void Parse(const std::string& filename);
 
 };
