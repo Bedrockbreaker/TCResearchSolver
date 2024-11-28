@@ -9,11 +9,11 @@ class Node {
 
 private:
 	HexPosition position;
-	std::unique_ptr<Aspect> aspect;
+	const Aspect& aspect;
 
 public:
-	Node(HexPosition position);
-	Node(int i, int j, int k);
+	Node(HexPosition position, const Aspect& aspect);
+	Node(int i, int j, int k, const Aspect& aspect);
 
 	const HexPosition& getPosition() const;
 	const Aspect& getAspect() const;
