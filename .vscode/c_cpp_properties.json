@@ -6,6 +6,13 @@
 				"${workspaceFolder}/include/**",
 				"${workspaceFolder}/lib/**"
 			],
+			"browse": {
+				"path": [
+					"${workspaceFolder}/include",
+					"${workspaceFolder}/lib",
+					"${workspaceFolder}/src"
+				]
+			},
 			"defines": [
 				"_DEBUG",
 				"UNICODE",
