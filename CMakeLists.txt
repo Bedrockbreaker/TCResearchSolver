@@ -10,7 +10,7 @@ add_executable(TCResearchSolver
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Aspect.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Config.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/HexPosition.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Hex.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Node.cpp"
 )
 target_include_directories(TCResearchSolver PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
