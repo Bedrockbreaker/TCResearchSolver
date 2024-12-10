@@ -15,7 +15,7 @@ int main(int argc, char* argv[]) {
 	try {
 		Config config;
 		config.Parse(configFile);
-		config.Print();
+		// config.Print();
 
 		Graph graph(config.GetGridSize(), config.GetTerminals());
 		graph.Print();
