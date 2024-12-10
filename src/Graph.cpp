@@ -39,8 +39,12 @@ Graph::Graph(int sideLength, std::vector<Node>& constantNodes)
 		throw std::runtime_error("There must be at least 2 static nodes with aspects");
 	}
 
-	for (int i = 0; i < sideLength; i++) {
-		for (int j = 0; j < sideLength - i; j++) {
+	for (int j = 1 - sideLength; j < sideLength; j++) {
+		for (
+			int i = std::max(1 - sideLength - j, 1 - sideLength);
+			i <= std::min(sideLength - 1, sideLength - 1 - j);
+			i++
+		) {
 			Hex pos(i, j);
 
 			if (nodes.contains(pos)) continue;
@@ -93,7 +97,7 @@ void Graph::Print() const {
 				? &nodes.at(pos)
 				: nullptr;
 
-			std::string_view namePart1 = "";
+			std::string_view namePart1 = node == nullptr ? "*" : "";
 			std::string_view namePart2 = "";
 
 			/* namePart1 = std::to_string(i) + "," + std::to_string(j);
