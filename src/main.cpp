@@ -21,6 +21,6 @@ int main(int argc, char* argv[]) {
 		graph.Print();
 	} catch (const std::runtime_error& error) {
 		std::cerr << error.what() << std::endl;
-		return 1;
+		return 2;
 	}
 }
