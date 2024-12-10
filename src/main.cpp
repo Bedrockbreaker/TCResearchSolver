@@ -1,6 +1,7 @@
 #include <iostream>
 
 #include "Config.hpp"
+#include "Graph.hpp"
 #include "Node.hpp"
 
 int main(int argc, char* argv[]) {
@@ -11,6 +12,15 @@ int main(int argc, char* argv[]) {
 
 	std::string configFile = argv[1];
 
-	Config config;
-	config.Parse(configFile);
+	try {
+		Config config;
+		config.Parse(configFile);
+		config.Print();
+
+		Graph graph(config.GetGridSize(), config.GetTerminals());
+		graph.Print();
+	} catch (const std::runtime_error& error) {
+		std::cerr << error.what() << std::endl;
+		return 1;
+	}
 }

@@ -5,6 +5,7 @@
 #include <unordered_map>
 
 #include "Aspect.hpp"
+#include "Node.hpp"
 #include "NodeType.hpp"
 
 class Config {
@@ -12,6 +13,9 @@ class Config {
 private:
 	std::unordered_map<short, Aspect> aspects;
 	std::unordered_map<std::string, short> aspectNames;
+
+	int size;
+	std::vector<Node> terminals;
 
 	const Aspect* GetAspect(std::string name) const;
 
@@ -22,6 +26,7 @@ private:
 	) const;
 
 	Aspect& AssertCreateAspect(const ryml::ConstNodeRef& node);
+	Node& AssertCreateNode(const ryml::ConstNodeRef& node);
 
 	std::string GetNodeName(const ryml::ConstNodeRef& node) const;
 
@@ -34,6 +39,10 @@ private:
 public:
 	Config();
 
+	int GetGridSize() const;
+	std::vector<Node>& GetTerminals();
+
 	void Parse(const std::string& filename);
 
+	void Print() const;
 };

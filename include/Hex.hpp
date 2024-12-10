@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 struct Hex {
 
@@ -15,9 +16,16 @@ struct Hex {
 
 	std::array<Hex, 6> Neighbours() const;
 
+	std::string toString() const;
 	bool operator==(const Hex& other) const;
 };
 
-struct HexHash {
-	std::size_t operator()(const Hex& pos) const;
+namespace std {
+	template<>
+	struct hash<Hex> {
+		size_t operator()(const Hex& pos) const {
+			// Hexes are uniquely determined by only 2 coordinates
+			return hash<int>()(pos.i) ^ (hash<int>()(pos.j) << 1);
+		}
+	};
 };

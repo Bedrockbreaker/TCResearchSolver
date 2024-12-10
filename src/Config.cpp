@@ -6,6 +6,14 @@
 
 Config::Config() {}
 
+int Config::GetGridSize() const {
+	return size;
+}
+
+std::vector<Node>& Config::GetTerminals() {
+	return terminals;
+}
+
 void Config::Parse(const std::string& filename) {
 	std::ifstream configFile(filename);
 
@@ -26,20 +34,12 @@ void Config::Parse(const std::string& filename) {
 		AssertCreateAspect(aspectNode);
 	}
 
-	for (const auto& aspect : aspects) {
-		std::cout
-			<< aspect.first << " " << aspect.second.getName()
-			<< " (" << aspect.second.getTier() << ") x"
-			<< aspect.second.getAmount();
-		
-		if (aspect.second.getParent1() == nullptr) {
-			std::cout << "\n";
-			continue;
-		}
-		
-		std::cout
-			<< " = " << aspect.second.getParent1()->getName() << " + "
-			<< aspect.second.getParent2()->getName() << "\n";
+	ryml::ConstNodeRef gridSize = AssertGetNode(root, "grid-size", NodeType::Value);
+	gridSize >> size;
+
+	ryml::ConstNodeRef staticNodes = AssertGetNode(root, "static-nodes", NodeType::Sequence);
+	for (const auto& staticNode : staticNodes.children()) {
+		AssertCreateNode(staticNode);
 	}
 }
 
@@ -165,6 +165,47 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	return aspectIt->second;
 }
 
+Node& Config::AssertCreateNode(const ryml::ConstNodeRef& node) {
+	ryml::ConstNodeRef aspectNode = AssertGetNode(node, "aspect", NodeType::Value);
+	ryml::ConstNodeRef positionNode = AssertGetNode(node, "position", NodeType::Sequence);
+
+	const Aspect* aspect = nullptr;
+
+	if (!aspectNode.val_is_null()) {
+		std::string aspectName;
+		aspectNode >> aspectName;
+		aspect = GetAspect(aspectName);
+		if (aspect == nullptr) {
+			throw std::runtime_error(
+				"Could not find aspect \"" + aspectName + "\" for " + GetNodeName(node)
+			);
+		}
+	}
+
+	int i;
+	int j;
+	int count = 0;
+	for (const auto& coordinateNode : positionNode.children()) {
+		switch(count++) {
+			case 0:
+				coordinateNode >> i;
+				break;
+			case 1:
+				coordinateNode >> j;
+				break;
+		}
+	}
+	if (count != 2) {
+		throw std::runtime_error(
+			"Expected " + GetNodeName(positionNode) + " to have 2 coordinates"
+		);
+	}
+
+	terminals.push_back(Node(Hex(i, j), aspect));
+
+	return terminals.back();
+}
+
 std::string Config::GetNodeName(const ryml::ConstNodeRef& node) const {
 	if (node.is_root()) {
 		return "config file";
@@ -218,5 +259,37 @@ void Config::PrintYaml(
 		std::cout
 			<< indent << (inSequence ? "- " : "")
 			<< node.val() << "\n";
+	}
+}
+
+void Config::Print() const {
+	std::cout << "Grid size: " << size << "\n\nTerminals:\n";
+
+	for (const auto& terminal : terminals) {
+		std::string_view aspectName = terminal.getAspect() == nullptr
+			? "NULL"
+			: terminal.getAspect()->getName();
+
+		std::cout
+			<< "  " << aspectName << " at "
+			<< terminal.getPosition().toString() << "\n";
+	}
+
+	std::cout << "\nAspects:\n";
+
+	for (const auto& aspect : aspects) {
+		std::cout
+			<< "  " << aspect.first << " " << aspect.second.getName()
+			<< " (" << aspect.second.getTier() << ") x"
+			<< aspect.second.getAmount();
+		
+		if (aspect.second.getParent1() == nullptr) {
+			std::cout << "\n";
+			continue;
+		}
+		
+		std::cout
+			<< " = " << aspect.second.getParent1()->getName() << " + "
+			<< aspect.second.getParent2()->getName() << "\n";
 	}
 }

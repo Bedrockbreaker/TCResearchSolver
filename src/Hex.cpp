@@ -30,12 +30,14 @@ std::array<Hex, 6> Hex::Neighbours() const {
 	};
 }
 
+std::string Hex::toString() const {
+	return "Hex("
+		+ std::to_string(i) + ", "
+		+ std::to_string(j) + ", "
+		+ std::to_string(k) + ")";
+}
+
 bool Hex::operator==(const Hex& other) const {
 	// Hexes are uniquely determined by only 2 coordinates
 	return i == other.i && j == other.j;
-}
-
-std::size_t HexHash::operator()(const Hex& pos) const {
-	// Hexes are uniquely determined by only 2 coordinates
-	return std::hash<int>()(pos.i) ^ std::hash<int>()(pos.j);
 }
