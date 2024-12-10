@@ -19,14 +19,14 @@ Graph::Graph(int sideLength, std::vector<Node>& constantNodes)
 			);
 		}
 
-		if (nodes.contains(pos)) {
+		auto [it, inserted] = nodes.try_emplace(pos, std::move(node));
+
+		if (!inserted) {
 			throw std::runtime_error(
 				"Node with position " + pos.toString() +
 				" already exists"
 			);
 		}
-
-		auto [it, inserted] = nodes.try_emplace(pos, std::move(node));
 
 		if (it->second.getAspect() != nullptr) {
 			terminals.push_back(&(it->second));
