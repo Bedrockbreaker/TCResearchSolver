@@ -6,7 +6,7 @@
 			"type": "cppdbg",
 			"request": "launch",
 			"program": "${workspaceFolder}/build/debug/TCResearchSolver.exe",
-			"args": ["${workspaceFolder}/test/config.yaml"],
+			"args": ["${workspaceFolder}/test/everything.yaml"],
 			"stopAtEntry": false,
 			"cwd": "${workspaceFolder}",
 			"environment": [],

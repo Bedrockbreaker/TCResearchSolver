@@ -1,0 +1,335 @@
+grid-size: 5
+
+static-nodes:
+  - aspect: stronito
+    position: [-4, 0]
+  - aspect: electrum
+    position: [-3, -1]
+  - aspect: nebrisum
+    position: [-4, 1]
+  - aspect: alienis
+    position: [-2, -2]
+  - aspect: volatus
+    position: [-3, 0]
+  - aspect: vinculum
+    position: [-4, 2]
+  - aspect: tenebrae
+    position: [-1, -3]
+  - aspect: sano
+    position: [-2, -1]
+  - aspect: praecantatio
+    position: [-3, 1]
+  - aspect: mortuus
+    position: [-4, 3]
+  - aspect: metallum
+    position: [0, -4]
+  - aspect: limus
+    position: [-1, -2]
+  - aspect: iter
+    position: [-2, 0]
+  - aspect: herba
+    position: [-3, 2]
+  - aspect: fames
+    position: [-4, 4]
+  - aspect: bestia
+    position: [0, -3]
+  - aspect: vitreus
+    position: [-1, -1]
+  - aspect: victus
+    position: [-2, 1]
+  - aspect: venenum
+    position: [-3, 3]
+  - aspect: aer
+    position: [1, -4]
+  - aspect: aqua
+    position: [0, -2]
+  - aspect: ignis
+    position: [-1, 0]
+  - aspect: ordo
+    position: [-2, 2]
+  - aspect: perditio
+    position: [-3, 4]
+  - aspect: terra
+    position: [1, -3]
+  - aspect: gelum
+    position: [0, -1]
+  - aspect: lux
+    position: [-1, 1]
+  - aspect: motus
+    position: [-2, 3]
+  - aspect: permutatio
+    position: [2, -4]
+  - aspect: potentia
+    position: [1, -2]
+  - aspect: tempestas
+    position: [0, 0]
+  - aspect: vacuos
+    position: [-1, 2]
+  - aspect: arbor
+    position: [-2, 4]
+  - aspect: auram
+    position: [2, -3]
+  - aspect: corpus
+    position: [1, -1]
+  - aspect: exanimis
+    position: [0, 1]
+  - aspect: spiritus
+    position: [-1, 3]
+  - aspect: vitium
+    position: [3, -4]
+  - aspect: cognitio
+    position: [2, -2]
+  - aspect: sensus
+    position: [1, 0]
+  - aspect: humanus
+    position: [0, 2]
+  - aspect: instrumentum
+    position: [-1, 4]
+  - aspect: lucrum
+    position: [3, -3]
+  - aspect: messis
+    position: [2, -1]
+  - aspect: perfodio
+    position: [1, 1]
+  - aspect: fabrico
+    position: [0, 3]
+  - aspect: machina
+    position: [4, -4]
+  - aspect: meto
+    position: [3, -2]
+  - aspect: pannus
+    position: [2, 0]
+  - aspect: telum
+    position: [1, 2]
+  - aspect: tutamen
+    position: [0, 4]
+  - aspect: gula
+    position: [4, -3]
+  - aspect: infernus
+    position: [3, -1]
+  - aspect: superbia
+    position: [2, 1]
+  - aspect: desidia
+    position: [1, 3]
+  - aspect: luxuria
+    position: [4, -2]
+  - aspect: invidia
+    position: [3, 0]
+  - aspect: ira
+    position: [2, 2]
+  - aspect: tempus
+    position: [4, -1]
+  - aspect: radio
+    position: [3, 1]
+  - aspect: magneto
+    position: [4, 0]
+
+aspects:
+  # Base Thaumcraft
+  # Tier 1 (Primal)
+  aer:
+    parent1:
+    parent2:
+  aqua:
+    parent1:
+    parent2:
+  ignis:
+    parent1:
+    parent2:
+  ordo:
+    parent1:
+    parent2:
+  perditio:
+    parent1:
+    parent2:
+  terra:
+    parent1:
+    parent2:
+  # Tier 2
+  gelum:
+    parent1: ignis
+    parent2: perditio
+  lux:
+    parent1: ignis
+    parent2: aer
+  motus:
+    parent1: ordo
+    parent2: aer
+  permutatio:
+    parent1: ordo
+    parent2: perditio
+  potentia:
+    parent1: ordo
+    parent2: ignis
+  tempestas:
+    parent1: aer
+    parent2: aqua
+  vacuos:
+    parent1: aer
+    parent2: perditio
+  venenum:
+    parent1: perditio
+    parent2: aqua
+  victus:
+    parent1: aqua
+    parent2: terra
+  vitreus:
+    parent1: terra
+    parent2: ordo
+  # Tier 3
+  bestia:
+    parent1: motus
+    parent2: victus
+  fames:
+    parent1: victus
+    parent2: vacuos
+  herba:
+    parent1: victus
+    parent2: terra
+  iter:
+    parent1: terra
+    parent2: motus
+  limus:
+    parent1: aqua
+    parent2: victus
+  metallum:
+    parent1: terra
+    parent2: vitreus
+  mortuus:
+    parent1: perditio
+    parent2: victus
+  praecantatio:
+    parent1: potentia
+    parent2: vacuos
+  sano:
+    parent1: ordo
+    parent2: victus
+  tenebrae:
+    parent1: lux
+    parent2: vacuos
+  vinculum:
+    parent1: perditio
+    parent2: motus
+  volatus:
+    parent1: aer
+    parent2: motus
+  # Tier 4
+  alienis:
+    parent1: tenebrae
+    parent2: vacuos
+  arbor:
+    parent1: aer
+    parent2: herba
+  auram:
+    parent1: aer
+    parent2: praecantatio
+  corpus:
+    parent1: mortuus
+    parent2: bestia
+  exanimis:
+    parent1: motus
+    parent2: mortuus
+  spiritus:
+    parent1: victus
+    parent2: mortuus
+  vitium:
+    parent1: perditio
+    parent2: praecantatio
+  # Tier 5
+  cognitio:
+    parent1: ignis
+    parent2: spiritus
+  sensus:
+    parent1: aer
+    parent2: spiritus
+  # Tier 6
+  humanus:
+    parent1: bestia
+    parent2: cognitio
+  # Tier 7
+  instrumentum:
+    parent1: ordo
+    parent2: humanus
+  lucrum:
+    parent1: fames
+    parent2: humanus
+  messis:
+    parent1: humanus
+    parent2: herba
+  perfodio:
+    parent1: terra
+    parent2: humanus
+  # Tier 8
+  fabrico:
+    parent1: instrumentum
+    parent2: humanus
+  machina:
+    parent1: motus
+    parent2: instrumentum
+  meto:
+    parent1: messis
+    parent2: instrumentum
+  pannus:
+    parent1: instrumentum
+    parent2: bestia
+  telum:
+    parent1: ignis
+    parent2: instrumentum
+  tutamen:
+    parent1: terra
+    parent2: instrumentum
+  
+  # Forbidden Magic
+  # Tier 4
+  gula:
+    parent1: fames
+    parent2: vacuos
+  infernus:
+    parent1: ignis
+    parent2: praecantatio
+  superbia:
+    parent1: volatus
+    parent2: vacuos
+  # Tier 5
+  desidia:
+    parent1: vinculum
+    parent2: spiritus
+  luxuria:
+    parent1: corpus
+    parent2: fames
+  # Tier 6
+  invidia:
+    parent1: sensus
+    parent2: fames
+  # Tier 9
+  ira:
+    parent1: telum
+    parent2: ignis
+  
+  # Magic Bees
+  # Tier 3
+  tempus:
+    parent1: vacuos
+    parent2: ordo
+  
+  # GregTech
+  # Tier 3
+  radio:
+    parent1: lux
+    parent2: potentia
+  # Tier 4
+  magneto:
+    parent1: metallum
+    parent2: iter
+  # Tier 6
+  stronito:
+    parent1: perditio
+    parent2: cognitio
+  # Tier 8
+  nebrisum:
+    parent1: perfodio
+    parent2: lucrum
+  # Tier 9
+  electrum:
+    parent1: potentia
+    parent2: machina
