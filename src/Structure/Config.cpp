@@ -3,8 +3,15 @@
 #include <sstream>
 
 #include "Config.hpp"
+#include "ParseError.hpp"
+
+using namespace TCSolver;
 
 Config::Config() {}
+
+const std::unordered_map<short, Aspect>& Config::GetAspects() const {
+	return aspects;
+}
 
 int Config::GetGridSize() const {
 	return size;
@@ -18,7 +25,7 @@ void Config::Parse(const std::string& filename) {
 	std::ifstream configFile(filename);
 
 	if (!configFile.is_open()) {
-		throw std::runtime_error("Could not open config file " + filename);
+		throw Error::ParseError("Could not open config file " + filename);
 	}
 
 	std::stringstream buffer;
@@ -31,7 +38,7 @@ void Config::Parse(const std::string& filename) {
 	ryml::ConstNodeRef aspectNodes = AssertGetNode(root, "aspects", NodeType::Map);
 
 	for (const auto& aspectNode : aspectNodes.children()) {
-		AssertCreateAspect(aspectNode);
+		const Aspect& aspect = AssertCreateAspect(aspectNode);
 	}
 
 	ryml::ConstNodeRef gridSize = AssertGetNode(root, "grid-size", NodeType::Value);
@@ -59,13 +66,13 @@ ryml::ConstNodeRef Config::AssertGetNode(
 	NodeType type
 ) const {
 	if (!parent.is_map()) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Expected \"" + GetNodeName(parent) + "\" to be a map"
 		);
 	}
 
 	if (!parent.has_child(key)) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Could not find \""
 			+ std::string(std::string_view(key))
 			+ "\" in " + GetNodeName(parent)
@@ -80,13 +87,13 @@ ryml::ConstNodeRef Config::AssertGetNode(
 	switch(type) {
 		case NodeType::Map:
 			if (isMap) break;
-			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a map");
+			throw Error::ParseError("Expected \"" + GetNodeName(child) + "\" to be a map");
 		case NodeType::Sequence:
 			if (isSeq) break;
-			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a sequence");
+			throw Error::ParseError("Expected \"" + GetNodeName(child) + "\" to be a sequence");
 		case NodeType::Value:
 			if (!isMap && !isSeq) break;
-			throw std::runtime_error("Expected \"" + GetNodeName(child) + "\" to be a value");
+			throw Error::ParseError("Expected \"" + GetNodeName(child) + "\" to be a value");
 	}
 
 	return parent[key];
@@ -99,7 +106,7 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	std::string aspectName = GetNodeName(node);
 
 	if (parent1Node.val_is_null() != parent2Node.val_is_null()) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Expected both parents of \""
 			+ aspectName
 			+ "\" to be null or non-null"
@@ -113,7 +120,7 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	}
 
 	if (amount < -1) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Expected amount of \"" + aspectName + "\" to be >= -1"
 		);
 	}
@@ -122,9 +129,10 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 		Aspect aspect(aspectName, amount);
 		auto [aspectIt, inserted] = aspects.try_emplace(aspect.getId(), std::move(aspect));
 		if (!inserted) {
-			throw std::runtime_error("Aspect \"" + aspectName + "\" already exists");
+			throw Error::ParseError("Aspect \"" + aspectName + "\" already exists");
 		}
 		aspectNames.try_emplace(aspectName, aspectIt->first);
+		aspectIt->second.UpdateParentRelations();
 		return aspectIt->second;
 	}
 
@@ -137,14 +145,14 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	auto parent2It = aspectNames.find(parent2Name);
 
 	if (parent1It == aspectNames.end()) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Could not find parent1 aspect \""
 			+ parent1Name + "\" for " + aspectName
 		);
 	}
 
 	if (parent2It == aspectNames.end()) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Could not find parent2 aspect \""
 			+ parent2Name + "\" for " + aspectName
 		);
@@ -158,10 +166,10 @@ Aspect& Config::AssertCreateAspect(const ryml::ConstNodeRef& node) {
 	);
 	auto [aspectIt, inserted] = aspects.try_emplace(aspect.getId(), std::move(aspect));
 	if (!inserted) {
-		throw std::runtime_error("Aspect \"" + aspectName + "\" already exists");
+		throw Error::ParseError("Aspect \"" + aspectName + "\" already exists");
 	}
 	aspectNames.try_emplace(aspectName, aspectIt->first);
-
+	aspectIt->second.UpdateParentRelations();
 	return aspectIt->second;
 }
 
@@ -176,7 +184,7 @@ Node& Config::AssertCreateNode(const ryml::ConstNodeRef& node) {
 		aspectNode >> aspectName;
 		aspect = GetAspect(aspectName);
 		if (aspect == nullptr) {
-			throw std::runtime_error(
+			throw Error::ParseError(
 				"Could not find aspect \"" + aspectName + "\" for " + GetNodeName(node)
 			);
 		}
@@ -196,7 +204,7 @@ Node& Config::AssertCreateNode(const ryml::ConstNodeRef& node) {
 		}
 	}
 	if (count != 2) {
-		throw std::runtime_error(
+		throw Error::ParseError(
 			"Expected " + GetNodeName(positionNode) + " to have 2 coordinates"
 		);
 	}

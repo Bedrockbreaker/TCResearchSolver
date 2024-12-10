@@ -8,6 +8,8 @@
 #include "Node.hpp"
 #include "NodeType.hpp"
 
+namespace TCSolver {
+
 class Config {
 
 private:
@@ -39,6 +41,7 @@ private:
 public:
 	Config();
 
+	const std::unordered_map<short, Aspect>& GetAspects() const;
 	int GetGridSize() const;
 	std::vector<Node>& GetTerminals();
 
@@ -46,3 +49,5 @@ public:
 
 	void Print() const;
 };
+
+}

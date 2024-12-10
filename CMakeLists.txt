@@ -8,13 +8,19 @@ add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/lib/rapidyaml" ryml)
 
 add_executable(TCResearchSolver
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/main.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Aspect.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Config.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Graph.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Hex.cpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/src/Node.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Solver/AStar.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Aspect.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Config.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Graph.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Hex.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Node.cpp"
 )
-target_include_directories(TCResearchSolver PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/include")
+target_include_directories(TCResearchSolver PRIVATE
+	"${CMAKE_CURRENT_SOURCE_DIR}/include"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Error"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Solver"
+	"${CMAKE_CURRENT_SOURCE_DIR}/include/Structure"
+)
 target_link_libraries(TCResearchSolver PUBLIC CPP23)
 target_link_libraries(TCResearchSolver PRIVATE ryml::ryml)
 

@@ -3,6 +3,8 @@
 #include <array>
 #include <string>
 
+namespace TCSolver {
+	
 struct Hex {
 
 	int i;
@@ -20,10 +22,12 @@ struct Hex {
 	bool operator==(const Hex& other) const;
 };
 
+}
+
 namespace std {
 	template<>
-	struct hash<Hex> {
-		size_t operator()(const Hex& pos) const {
+	struct hash<TCSolver::Hex> {
+		size_t operator()(const TCSolver::Hex& pos) const {
 			// Hexes are uniquely determined by only 2 coordinates
 			return hash<int>()(pos.i) ^ (hash<int>()(pos.j) << 1);
 		}

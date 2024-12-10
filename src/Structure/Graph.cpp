@@ -1,44 +1,13 @@
+#include <algorithm>
 #include <iostream>
 #include <sstream>
 
 #include "Graph.hpp"
+#include "GraphError.hpp"
 
-Graph::Graph(int sideLength, std::vector<Node>& constantNodes)
-	: sideLength(sideLength)
-{
-	std::vector<Hex> nullNodes;
-	const Hex origin(0, 0);
+using namespace TCSolver;
 
-	for (auto& node : constantNodes) {
-		Hex pos = node.getPosition();
-
-		if (origin.Distance(pos) >= sideLength) {
-			throw std::runtime_error(
-				"Node with position " + pos.toString() +
-				" is out of bounds"
-			);
-		}
-
-		auto [it, inserted] = nodes.try_emplace(pos, std::move(node));
-
-		if (!inserted) {
-			throw std::runtime_error(
-				"Node with position " + pos.toString() +
-				" already exists"
-			);
-		}
-
-		if (it->second.getAspect() != nullptr) {
-			terminals.push_back(&(it->second));
-		} else {
-			nullNodes.push_back(pos);
-		}
-	}
-
-	if (terminals.size() < 2) {
-		throw std::runtime_error("There must be at least 2 static nodes with aspects");
-	}
-
+Graph::Graph(int sideLength) : sideLength(sideLength) {
 	for (int j = 1 - sideLength; j < sideLength; j++) {
 		for (
 			int i = std::max(1 - sideLength - j, 1 - sideLength);
@@ -46,16 +15,81 @@ Graph::Graph(int sideLength, std::vector<Node>& constantNodes)
 			i++
 		) {
 			Hex pos(i, j);
-
-			if (nodes.contains(pos)) continue;
-
-			nodes.try_emplace(pos, Node(pos, nullptr));
+			nodes.try_emplace(Hex(i, j), Node(pos, nullptr));
 		}
 	}
+}
 
-	for (const auto& pos : nullNodes) {
-		nodes.erase(pos);
+Graph::Graph(const Graph& other)
+	: sideLength(other.sideLength), nodes(other.nodes), terminals(other.terminals) {}
+
+Graph::Graph_t::iterator Graph::begin() {
+	return nodes.begin();
+}
+
+Graph::Graph_t::iterator Graph::end() {
+	return nodes.end();
+}
+
+Graph::Graph_t::const_iterator Graph::begin() const noexcept {
+	return nodes.cbegin();
+}
+
+Graph::Graph_t::const_iterator Graph::end() const noexcept {
+	return nodes.cend();
+}
+
+const Node& Graph::at(Hex position) const {
+	return nodes.at(position);
+}
+
+int Graph::GetSideLength() const {
+	return sideLength;
+}
+
+const void Graph::MergeTerminals(const std::vector<Node>& newTerminals) {
+	static const Hex origin(0, 0);
+
+	for (auto& node : newTerminals) {
+		Hex pos = node.getPosition();
+
+		if (origin.Distance(pos) >= sideLength) {
+			throw Error::GraphError(
+				"Node with position " + pos.toString() +
+				" is out of bounds"
+			);
+		}
+
+		auto nodeIt = nodes.find(pos);
+		auto terminalIt = std::find(terminals.begin(), terminals.end(), &(nodeIt->second));
+		
+		if (node.getAspect() == nullptr) {
+			if (nodeIt != nodes.end()) {			
+				nodes.erase(nodeIt);
+			}
+
+			if (terminalIt != terminals.end()) {
+				terminals.erase(terminalIt);
+			}
+		} else {
+			const auto [it, _] = nodes.insert_or_assign(pos, std::move(node));
+			if (terminalIt == terminals.end()) {
+				terminals.push_back(&(it->second));
+			} else {
+				*terminalIt = &(it->second);
+			}
+		}
 	}
+}
+
+const std::vector<Node*>& Graph::GetTerminals() const {
+	return terminals;
+}
+
+bool Graph::Bounds(Hex position) const {
+	return
+		position.Distance(Hex(0, 0)) < sideLength
+		&& nodes.find(position) != nodes.end();
 }
 
 void Graph::Print() const {

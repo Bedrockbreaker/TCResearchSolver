@@ -1,8 +1,13 @@
 #include <iostream>
 
+#include "AStar.hpp"
 #include "Config.hpp"
 #include "Graph.hpp"
-#include "Node.hpp"
+#include "GraphError.hpp"
+#include "ParseError.hpp"
+#include "SolverError.hpp"
+
+using namespace TCSolver;
 
 int main(int argc, char* argv[]) {
 	if (argc != 2) {
@@ -17,10 +22,21 @@ int main(int argc, char* argv[]) {
 		config.Parse(configFile);
 		// config.Print();
 
-		Graph graph(config.GetGridSize(), config.GetTerminals());
-		graph.Print();
-	} catch (const std::runtime_error& error) {
+		Graph graph(config.GetGridSize());
+		graph.MergeTerminals(config.GetTerminals());
+		// graph.Print();
+
+		Solvers::AStar aStar(config);
+		Graph solution = aStar.Solve(graph);
+		solution.Print();
+	} catch (const Error::ParseError& error) {
 		std::cerr << error.what() << std::endl;
 		return 2;
+	} catch (const Error::GraphError& error) {
+		std::cerr << error.what() << std::endl;
+		return 3;
+	} catch (const Error::SolverError& error) {
+		std::cerr << error.what() << std::endl;
+		return 4;
 	}
 }
