@@ -7,21 +7,31 @@
 
 using namespace TCSolver;
 
-Graph::Graph(int sideLength) : sideLength(sideLength) {
+Graph::Graph(int sideLength, std::shared_ptr<NodeManager> manager)
+	: sideLength(sideLength), manager(manager)
+{
 	for (int j = 1 - sideLength; j < sideLength; j++) {
 		for (
 			int i = std::max(1 - sideLength - j, 1 - sideLength);
 			i <= std::min(sideLength - 1, sideLength - 1 - j);
 			i++
 		) {
-			Hex pos(i, j);
-			nodes.try_emplace(Hex(i, j), Node(pos, nullptr));
+			Upsert(Hex(i, j), nullptr);
 		}
 	}
 }
 
 Graph::Graph(const Graph& other)
-	: sideLength(other.sideLength), nodes(other.nodes), terminals(other.terminals) {}
+	: sideLength(other.sideLength),
+	nodes(other.nodes),
+	terminals(other.terminals),
+	manager(other.manager) {}
+
+Graph::Graph(Graph&& other) noexcept
+	: sideLength(other.sideLength),
+	nodes(std::move(other.nodes)),
+	terminals(std::move(other.terminals)),
+	manager(other.manager) {}
 
 Graph::Graph_t::iterator Graph::begin() {
 	return nodes.begin();
@@ -39,7 +49,41 @@ Graph::Graph_t::const_iterator Graph::end() const noexcept {
 	return nodes.cend();
 }
 
-const Node& Graph::at(Hex position) const {
+Graph::NodePtr Graph::Upsert(Hex position, const Aspect* aspect) {
+	return Upsert(Node(position, aspect));
+}
+
+Graph::NodePtr Graph::Upsert(Node&& nodeRef) {
+	Hex position = nodeRef.getPosition();
+
+	if (position.Distance(Hex::ZERO) >= sideLength) {
+		throw Error::GraphError(
+			"Node with position " + position.toString() +
+			" is out of bounds"
+		);
+	}
+
+	NodePtr node = manager->Move(std::move(nodeRef));
+	
+	if (IsTerminal(node)) {
+		throw Error::GraphError(
+			"Node with position " + position.toString() +
+			" is a terminal"
+		);
+	}
+
+	auto nodeIt = nodes.find(position);
+
+	if (nodeIt != nodes.end() && node->getAspect() == nullptr) {
+		nodes.erase(nodeIt);
+	} else {
+		nodes.insert_or_assign(position, node);
+	}
+
+	return node;
+}
+
+Graph::NodePtr Graph::at(Hex position) const {
 	return nodes.at(position);
 }
 
@@ -47,46 +91,62 @@ int Graph::GetSideLength() const {
 	return sideLength;
 }
 
-const void Graph::MergeTerminals(const std::vector<Node>& newTerminals) {
-	static const Hex origin(0, 0);
+const void Graph::AddTerminals(std::vector<Node>&& newTerminals) {
+	for (auto& nodeRef : newTerminals) {
+		Hex position = nodeRef.getPosition();
+		NodePtr node = Upsert(std::move(nodeRef));
 
-	for (auto& node : newTerminals) {
-		Hex pos = node.getPosition();
+		auto terminalIt = std::find(terminals.begin(), terminals.end(), node);
 
-		if (origin.Distance(pos) >= sideLength) {
-			throw Error::GraphError(
-				"Node with position " + pos.toString() +
-				" is out of bounds"
-			);
-		}
-
-		auto nodeIt = nodes.find(pos);
-		auto terminalIt = std::find(terminals.begin(), terminals.end(), &(nodeIt->second));
-		
-		if (node.getAspect() == nullptr) {
-			if (nodeIt != nodes.end()) {			
-				nodes.erase(nodeIt);
-			}
-
+		if (node->getAspect() == nullptr) {
 			if (terminalIt != terminals.end()) {
 				terminals.erase(terminalIt);
 			}
 		} else {
-			const auto [it, _] = nodes.insert_or_assign(pos, std::move(node));
 			if (terminalIt == terminals.end()) {
-				terminals.push_back(&(it->second));
+				terminals.push_back(node);
 			} else {
-				*terminalIt = &(it->second);
+				terminals.erase(terminalIt);
+				terminals.push_back(node);
 			}
 		}
 	}
 }
 
-const std::vector<Node*>& Graph::GetTerminals() const {
+const std::vector<Graph::NodePtr>& Graph::GetTerminals() const {
 	return terminals;
 }
 
-bool Graph::Bounds(Hex position) const {
+bool Graph::IsTerminal(NodePtr node) const {
+	return std::find(terminals.begin(), terminals.end(), node) != terminals.end();
+}
+
+std::vector<Graph::NodePtr> Graph::GetNeighbors(Hex position) const {
+	std::vector<NodePtr> neighbors;
+
+	for (const auto* aspect : at(position)->getAspect()->getRelated()) {
+		for (const auto& hex : position.Neighbours()) {
+			if (hex.Distance(Hex::ZERO) >= sideLength) continue;
+			const auto it = nodes.find(hex);
+			if (it == nodes.end()) continue;
+			NodePtr node = manager->ComputeIfAbsent(hex, aspect);
+			if (
+				it->second->getAspect() != nullptr
+				&& !IsTerminal(node)
+			) continue;
+
+			if (node == nullptr) {
+				std::cout << "BAD";
+			}
+
+			neighbors.push_back(node);
+		}
+	}
+
+	return neighbors;
+}
+
+bool Graph::Contains(Hex position) const {
 	return
 		position.Distance(Hex(0, 0)) < sideLength
 		&& nodes.find(position) != nodes.end();
@@ -127,8 +187,8 @@ void Graph::Print() const {
 
 			Hex pos(i, j);
 
-			const Node* node = nodes.contains(pos)
-				? &nodes.at(pos)
+			NodePtr node = Contains(pos)
+				? nodes.at(pos)
 				: nullptr;
 
 			std::string_view namePart1 = node == nullptr ? "*" : "";
@@ -192,4 +252,24 @@ void Graph::Print() const {
 	}
 
 	std::cout << blank << " \\_____/\n";
+}
+
+Graph& Graph::operator=(const Graph& other) {
+	if (this != &other) {
+		sideLength = other.sideLength;
+		nodes = other.nodes;
+		terminals = other.terminals;
+		manager = other.manager;
+	}
+	return *this;
+}
+
+Graph& Graph::operator=(Graph&& other) noexcept {
+	if (this != &other) {
+		sideLength = other.sideLength;
+		nodes = std::move(other.nodes);
+		terminals = std::move(other.terminals);
+		manager = other.manager;
+	}
+	return *this;
 }

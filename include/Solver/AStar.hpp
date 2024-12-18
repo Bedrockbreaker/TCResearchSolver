@@ -11,12 +11,13 @@
 namespace TCSolver::Solvers {
 
 struct AStarState {
-	Node node;
+	Hex position;
+	Graph graph;
 	int hCost;
 	int pathLength;
 	int tier;
 
-	AStarState(const Node& node, int hCost, int pathLength, int tier);
+	AStarState(Hex position, Graph&& graph, int hCost, int pathLength, int tier);
 	AStarState(const AStarState& other);
 	AStarState(AStarState&& other) noexcept;
 
@@ -34,12 +35,8 @@ class AStar : public Solvers::AbstractSolver {
 		std::greater<>
 	>;
 
-private:
-
-	const std::unordered_map<short, Aspect>& aspects;
-
 public:
-	AStar(const Config& config);
+	AStar() = default;
 
 	Graph Solve(const Graph& graph) override;
 };

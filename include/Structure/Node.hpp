@@ -17,7 +17,7 @@ private:
 public:
 	Node(Hex position, const Aspect* aspect);
 	Node(int i, int j, int k, const Aspect* aspect);
-	Node(const Node& other);
+	Node(const Node& other) = delete;
 	Node(Node&& other) noexcept;
 
 	const Hex& getPosition() const;
@@ -28,7 +28,7 @@ public:
 
 	bool operator==(const Node& other) const;
 
-	Node& operator=(const Node& other);
+	Node& operator=(const Node& other) = delete;
 	Node& operator=(Node&& other) noexcept;
 };
 

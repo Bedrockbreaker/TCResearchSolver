@@ -4,6 +4,7 @@
 #include "Config.hpp"
 #include "Graph.hpp"
 #include "GraphError.hpp"
+#include "NodeManager.hpp"
 #include "ParseError.hpp"
 #include "SolverError.hpp"
 
@@ -22,11 +23,13 @@ int main(int argc, char* argv[]) {
 		config.Parse(configFile);
 		// config.Print();
 
-		Graph graph(config.GetGridSize());
-		graph.MergeTerminals(config.GetTerminals());
+		std::shared_ptr<NodeManager> manager = std::make_shared<NodeManager>();
+
+		Graph graph(config.GetGridSize(), manager);
+		graph.AddTerminals(std::move(config.GetTerminals()));
 		// graph.Print();
 
-		Solvers::AStar aStar(config);
+		Solvers::AStar aStar;
 		Graph solution = aStar.Solve(graph);
 		solution.Print();
 	} catch (const Error::ParseError& error) {

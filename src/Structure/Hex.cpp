@@ -5,6 +5,8 @@
 
 using namespace TCSolver;
 
+const Hex Hex::ZERO = Hex(0, 0, 0);
+
 Hex::Hex(int i, int j, int k) : i(i), j(j), k(k) {
 	if (i + j + k != 0) {
 		throw std::invalid_argument("Sum of i, j, k must be 0");

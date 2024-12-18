@@ -7,6 +7,8 @@ namespace TCSolver {
 	
 struct Hex {
 
+	static const Hex ZERO;
+
 	int i;
 	int j;
 	int k;

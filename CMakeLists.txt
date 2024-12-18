@@ -14,6 +14,7 @@ add_executable(TCResearchSolver
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Graph.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Hex.cpp"
 	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/Node.cpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/src/Structure/NodeManager.cpp"
 )
 target_include_directories(TCResearchSolver PRIVATE
 	"${CMAKE_CURRENT_SOURCE_DIR}/include"

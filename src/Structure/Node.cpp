@@ -8,9 +8,6 @@ Node::Node(Hex position, const Aspect* aspect)
 Node::Node(int i, int j, int k, const Aspect* aspect)
 	: Node(Hex(i, j, k), aspect) {}
 
-Node::Node(const Node& other)
-	: position(other.position), aspect(other.aspect) {}
-
 Node::Node(Node&& other) noexcept
 	: position(std::move(other.position)),
 	aspect(other.aspect) {}
@@ -41,12 +38,6 @@ int Node::Distance(const Node& other) const {
 
 bool Node::operator==(const Node& other) const {
 	return position == other.position && aspect == other.aspect;
-}
-
-Node& Node::operator=(const Node& other) {
-	position = other.position;
-	aspect = other.aspect;
-	return *this;
 }
 
 Node& Node::operator=(Node&& other) noexcept {
