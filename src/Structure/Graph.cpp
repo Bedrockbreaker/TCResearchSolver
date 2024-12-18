@@ -135,10 +135,6 @@ std::vector<Graph::NodePtr> Graph::GetNeighbors(Hex position) const {
 				&& !IsTerminal(node)
 			) continue;
 
-			if (node == nullptr) {
-				std::cout << "BAD";
-			}
-
 			neighbors.push_back(node);
 		}
 	}
