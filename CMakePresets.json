@@ -4,7 +4,6 @@
 		{
 			"name": "debug",
 			"displayName": "Debug",
-			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/${presetName}",
 			"installDir": "${sourceDir}/dist/sources",
 			"cacheVariables": {
@@ -17,7 +16,6 @@
 		{
 			"name": "release",
 			"displayName": "Release",
-			"generator": "Ninja",
 			"binaryDir": "${sourceDir}/build/${presetName}",
 			"installDir": "${sourceDir}/dist/release",
 			"cacheVariables": {
