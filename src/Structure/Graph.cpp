@@ -3,152 +3,79 @@
 #include <sstream>
 
 #include "Graph.hpp"
-#include "GraphError.hpp"
 
-using namespace TCSolver;
-
-Graph::Graph(int sideLength, std::shared_ptr<NodeManager> manager)
-	: sideLength(sideLength), manager(manager)
-{
-	for (int j = 1 - sideLength; j < sideLength; j++) {
-		for (
-			int i = std::max(1 - sideLength - j, 1 - sideLength);
-			i <= std::min(sideLength - 1, sideLength - 1 - j);
-			i++
-		) {
-			Upsert(Hex(i, j), nullptr);
-		}
-	}
+TCSolver::Graph::Graph(const Config& config) noexcept : config(config), sideLength(config.GetGridSize()) {
+	assert(config.GetGridSize() > 0 && config.GetGridSize() <= 5 && "Grid size must be between 1 and 5");
+	// for (int32_t j = 1 - sideLength; j < sideLength; j++) {
+	// 	for (
+	// 		int32_t i = std::max(1 - sideLength - j, 1 - sideLength);
+	// 		i <= std::min(sideLength - 1, sideLength - 1 - j);
+	// 		++i
+	// 	) {
+	// 		Add(Hex(i, j), -1);
+	// 	}
+	// }
 }
 
-Graph::Graph(const Graph& other)
-	: sideLength(other.sideLength),
-	nodes(other.nodes),
-	terminals(other.terminals),
-	manager(other.manager) {}
+const TCSolver::Node& TCSolver::Graph::Add(Hex position, int32_t aspectId) {
+#ifndef NDEBUG
+	if (Hex::Distance(position, Hex::ZERO) >= sideLength)
+		throw std::runtime_error(std::format("Node with position {} is out of bounds", position.to_string()));
 
-Graph::Graph(Graph&& other) noexcept
-	: sideLength(other.sideLength),
-	nodes(std::move(other.nodes)),
-	terminals(std::move(other.terminals)),
-	manager(other.manager) {}
+	if (nodes.contains(position))
+		throw std::runtime_error(std::format("Node with position {} already exists", position.to_string()));
 
-Graph::Graph_t::iterator Graph::begin() {
-	return nodes.begin();
+	if (IsTerminal(position))
+		throw std::runtime_error(std::format("Node with position {} is a terminal", position.to_string()));
+#endif
+
+	auto [it, bInserted] = nodes.try_emplace(position, position, aspectId);
+	return it->second;
 }
 
-Graph::Graph_t::iterator Graph::end() {
-	return nodes.end();
-}
+const TCSolver::Node& TCSolver::Graph::At(Hex position) const {
+#ifndef NDEBUG
+	if (!nodes.contains(position))
+		throw std::runtime_error(std::format("Node with position {} does not exist", position.to_string()));
+#endif
 
-Graph::Graph_t::const_iterator Graph::begin() const noexcept {
-	return nodes.cbegin();
-}
-
-Graph::Graph_t::const_iterator Graph::end() const noexcept {
-	return nodes.cend();
-}
-
-Graph::NodePtr Graph::Upsert(Hex position, const Aspect* aspect) {
-	return Upsert(Node(position, aspect));
-}
-
-Graph::NodePtr Graph::Upsert(Node&& nodeRef) {
-	Hex position = nodeRef.getPosition();
-
-	if (position.Distance(Hex::ZERO) >= sideLength) {
-		throw Error::GraphError(
-			"Node with position " + position.toString() +
-			" is out of bounds"
-		);
-	}
-
-	NodePtr node = manager->Move(std::move(nodeRef));
-	
-	if (IsTerminal(node)) {
-		throw Error::GraphError(
-			"Node with position " + position.toString() +
-			" is a terminal"
-		);
-	}
-
-	auto nodeIt = nodes.find(position);
-
-	if (nodeIt != nodes.end() && node->getAspect() == nullptr) {
-		nodes.erase(nodeIt);
-	} else {
-		nodes.insert_or_assign(position, node);
-	}
-
-	return node;
-}
-
-Graph::NodePtr Graph::at(Hex position) const {
 	return nodes.at(position);
 }
 
-int Graph::GetSideLength() const {
-	return sideLength;
+void TCSolver::Graph::AddTerminals(const std::vector<Hex>& newTerminals) {
+	std::copy(newTerminals.begin(), newTerminals.end(), std::inserter(terminals, terminals.begin()));
 }
 
-const void Graph::AddTerminals(std::vector<Node>&& newTerminals) {
-	for (auto& nodeRef : newTerminals) {
-		Hex position = nodeRef.getPosition();
-		NodePtr node = Upsert(std::move(nodeRef));
-
-		auto terminalIt = std::find(terminals.begin(), terminals.end(), node);
-
-		if (node->getAspect() == nullptr) {
-			if (terminalIt != terminals.end()) {
-				terminals.erase(terminalIt);
-			}
-		} else {
-			if (terminalIt == terminals.end()) {
-				terminals.push_back(node);
-			} else {
-				terminals.erase(terminalIt);
-				terminals.push_back(node);
-			}
-		}
+uint64_t TCSolver::Graph::GetPlacementMask() const {
+	uint64_t mask = 0;
+	for (const std::pair<Hex, Node>& pair : nodes) {
+		mask |= Graph::HEX_ENCODINGS.at(pair.first);
 	}
+	return mask;
 }
 
-const std::vector<Graph::NodePtr>& Graph::GetTerminals() const {
-	return terminals;
-}
+// std::vector<Graph::NodePtr> Graph::GetNeighbors(Hex position) const {
+// 	std::vector<NodePtr> neighbors;
 
-bool Graph::IsTerminal(NodePtr node) const {
-	return std::find(terminals.begin(), terminals.end(), node) != terminals.end();
-}
+// 	for (const auto* aspect : at(position)->getAspect()->getRelated()) {
+// 		for (const auto& hex : position.GetNeighboringPositions()) {
+// 			if (hex.Distance(Hex::ZERO) >= sideLength) continue;
+// 			const auto it = nodes.find(hex);
+// 			if (it == nodes.end()) continue;
+// 			NodePtr node = manager->ComputeIfAbsent(hex, aspect);
+// 			if (
+// 				it->second->getAspect() != nullptr
+// 				&& !IsTerminal(node)
+// 			) continue;
 
-std::vector<Graph::NodePtr> Graph::GetNeighbors(Hex position) const {
-	std::vector<NodePtr> neighbors;
+// 			neighbors.push_back(node);
+// 		}
+// 	}
 
-	for (const auto* aspect : at(position)->getAspect()->getRelated()) {
-		for (const auto& hex : position.Neighbours()) {
-			if (hex.Distance(Hex::ZERO) >= sideLength) continue;
-			const auto it = nodes.find(hex);
-			if (it == nodes.end()) continue;
-			NodePtr node = manager->ComputeIfAbsent(hex, aspect);
-			if (
-				it->second->getAspect() != nullptr
-				&& !IsTerminal(node)
-			) continue;
+// 	return neighbors;
+// }
 
-			neighbors.push_back(node);
-		}
-	}
-
-	return neighbors;
-}
-
-bool Graph::Contains(Hex position) const {
-	return
-		position.Distance(Hex(0, 0)) < sideLength
-		&& nodes.find(position) != nodes.end();
-}
-
-void Graph::Print() const {
+void TCSolver::Graph::Print() const {
 	int radius = sideLength - 1;
 	
 	std::string blank(radius * 7, ' ');
@@ -183,21 +110,22 @@ void Graph::Print() const {
 
 			Hex pos(i, j);
 
-			NodePtr node = Contains(pos)
-				? nodes.at(pos)
-				: nullptr;
+			bool bGraphContainsNode = Contains(pos);
 
-			std::string_view namePart1 = node == nullptr ? "*" : "";
+			std::string_view namePart1 = bGraphContainsNode ? "*" : "";
 			std::string_view namePart2 = "";
 
 			/* namePart1 = std::to_string(i) + "," + std::to_string(j);
 			namePart2 = std::to_string(0 - i - j); */
 
-			if (node != nullptr && node->getAspect() != nullptr) {
-				namePart1 = node->getAspect()->getName();
-				if (namePart1.length() > 7) {
-					namePart2 = namePart1.substr(namePart1.length() / 2);
-					namePart1 = namePart1.substr(0, (namePart1.length() + 1) / 2);
+			if (bGraphContainsNode) {
+				const Node& node = nodes.at(pos);
+				if (node.GetAspectId() > -1) {
+					namePart1 = config.GetAspects()[node.GetAspectId()].GetName();
+					if (namePart1.length() > 7) {
+						namePart2 = namePart1.substr(namePart1.length() / 2);
+						namePart1 = namePart1.substr(0, (namePart1.length() + 1) / 2);
+					}
 				}
 			}
 
@@ -248,24 +176,4 @@ void Graph::Print() const {
 	}
 
 	std::cout << blank << " \\_____/\n";
-}
-
-Graph& Graph::operator=(const Graph& other) {
-	if (this != &other) {
-		sideLength = other.sideLength;
-		nodes = other.nodes;
-		terminals = other.terminals;
-		manager = other.manager;
-	}
-	return *this;
-}
-
-Graph& Graph::operator=(Graph&& other) noexcept {
-	if (this != &other) {
-		sideLength = other.sideLength;
-		nodes = std::move(other.nodes);
-		terminals = std::move(other.terminals);
-		manager = other.manager;
-	}
-	return *this;
 }

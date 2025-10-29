@@ -1,99 +1,31 @@
-#include <iostream>
+#include <algorithm>
+#include <assert.h>
+#include <stdexcept>
 
 #include "Aspect.hpp"
 
-using namespace TCSolver;
+TCSolver::Aspect::Aspect(int32_t id, const std::string& name) noexcept : id(id), name(name) {
+	assert(id > -1 && "id must be non-negative");
+}
 
-short Aspect::count = 0;
-
-Aspect::Aspect(const std::string& name, int amount)
-	: name(name),
-	id(count++),
-	parent1(nullptr),
-	parent2(nullptr),
-	tier(1),
-	amount(amount) {}
-
-Aspect::Aspect(
-	const std::string& name,
-	Aspect* parent1,
-	Aspect* parent2,
-	int amount
-) : name(name), id(count++), parent1(parent1), parent2(parent2), amount(amount)
+TCSolver::Aspect::Aspect(int32_t id, const std::string& name, int32_t parent1, int32_t parent2, int32_t tier) noexcept :
+	id(id), name(name), parent1(parent1), parent2(parent2), tier(tier)
 {
-	tier = std::max(parent1->getTier(), parent2->getTier()) + 1;
+	assert(id > -1 && "id must be non-negative");
+	assert(parent1 > -1 && parent2 > -1 && "parent1 and parent2 must be non-negative");
+
+	related.reserve(2);
+	related.push_back(parent1);
+	related.push_back(parent2);
 }
 
-Aspect::Aspect(Aspect&& other) noexcept
-	: name(std::move(other.name)),
-	id(other.id),
-	parent1(other.parent1),
-	parent2(other.parent2),
-	children(std::move(other.children)),
-	tier(other.tier),
-	amount(other.amount) {}
+void TCSolver::Aspect::AddChild(int32_t child) {
+	if (child <= -1) throw std::invalid_argument("child must be non-negative");
 
-std::string_view Aspect::getName() const noexcept {
-	return name;
-}
+	// Intentionally throw if child already exists
+	if (std::find(children.begin(), children.end(), child) != children.end())
+		throw std::invalid_argument("child already exists");
 
-short Aspect::getId() const {
-	return id;
-}
-
-const Aspect* Aspect::getParent1() const {
-	return parent1;
-}
-
-const Aspect* Aspect::getParent2() const {
-	return parent2;
-}
-
-const std::vector<const Aspect*>& Aspect::getChildren() const {
-	return children;
-}
-
-std::vector<const Aspect*> Aspect::getRelated() const {
-	std::vector<const Aspect*> related;
-	related.insert(related.end(), children.begin(), children.end());
-	if (parent1 != nullptr) {
-		related.push_back(parent1);
-		related.push_back(parent2);
-	}
-	return related;
-}
-
-void Aspect::UpdateParentRelations() const {
-	if (parent1 != nullptr) {
-		parent1->children.push_back(this);
-		parent2->children.push_back(this);
-	}
-}
-
-int Aspect::getTier() const {
-	return tier;
-}
-
-int Aspect::getAmount() const {
-	return amount;
-}
-
-bool Aspect::isRelated(const Aspect& other) const {
-	return
-		parent1 == &other || parent2 == &other
-		|| other.parent1 == this || other.parent2 == this;
-}
-
-Aspect& Aspect::operator=(Aspect&& other) noexcept {
-	name = std::move(other.name);
-	id = other.id;
-	parent1 = other.parent1;
-	parent2 = other.parent2;
-	tier = other.tier;
-	amount = other.amount;
-	return *this;
-}
-
-bool Aspect::operator==(const Aspect& other) const {
-	return id == other.id;
+	children.push_back(child);
+	related.push_back(child);
 }

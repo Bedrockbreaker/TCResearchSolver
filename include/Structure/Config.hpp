@@ -11,43 +11,39 @@
 namespace TCSolver {
 
 class Config {
-
-private:
-	std::unordered_map<short, Aspect> aspects;
-	std::unordered_map<std::string, short> aspectNames;
-
-	int size;
-	std::vector<Node> terminals;
-
-	const Aspect* GetAspect(std::string name) const;
-
-	ryml::ConstNodeRef AssertGetNode(
-		const ryml::ConstNodeRef& parent,
-		c4::csubstr key,
-		NodeType type
-	) const;
-
-	Aspect& AssertCreateAspect(const ryml::ConstNodeRef& node);
-	Node& AssertCreateNode(const ryml::ConstNodeRef& node);
-
-	std::string GetNodeName(const ryml::ConstNodeRef& node) const;
-
-	void PrintYaml(
-		const ryml::ConstNodeRef& node,
-		int indentation = 0,
-		bool inSequence = false
-	) const;
-
 public:
-	Config();
+	Config() = default;
+	~Config() = default;
 
-	const std::unordered_map<short, Aspect>& GetAspects() const;
-	int GetGridSize() const;
-	std::vector<Node>& GetTerminals();
+	Config(const Config&) = delete;
+	Config(Config&&) = delete;
+	Config& operator=(const Config&) = delete;
+	Config& operator=(Config&&) = delete;
+
+	const std::vector<Aspect>& GetAspects() const noexcept { return aspects; }
+	int32_t GetGridSize() const noexcept { return gridSize; }
+	const std::vector<Node>& GetTerminals() { return terminals; }
 
 	void Parse(const std::string& filename);
 
 	void Print() const;
+
+private:
+	int32_t gridSize = 0;
+	std::vector<Aspect> aspects;
+	std::unordered_map<std::string, int32_t> aspectNames;
+	std::vector<Node> terminals;
+
+	int32_t GetAspectIdByName(const std::string& name) const;
+
+	ryml::ConstNodeRef GetYamlNode(const ryml::ConstNodeRef& parent, c4::csubstr key, ryml::NodeType type) const;
+
+	void CreateAspectFromYamlNode(const ryml::ConstNodeRef& node);
+	void CreateGraphNodeFromYamlNode(const ryml::ConstNodeRef& node);
+
+	std::string GetYamlNodeKeyName(const ryml::ConstNodeRef& node) const;
+
+	void PrintYaml(const ryml::ConstNodeRef& node, int32_t indentation = 0, bool bInSequence = false) const;
 };
 
 }

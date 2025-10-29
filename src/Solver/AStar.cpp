@@ -1,109 +1,87 @@
 #include <iostream>
+#include <queue>
+#include <unordered_map>
 
 #include "AStar.hpp"
-#include "SolverError.hpp"
+#include "Graph.hpp"
 
-using namespace TCSolver;
-using namespace TCSolver::Solvers;
+std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end) {
+	std::priority_queue<State> openSet;
+	std::unordered_map<Hex, int32_t> gCosts;
+	std::unordered_map<State, State> parents;
 
-AStarState::AStarState(Hex position, Graph&& graph, int hCost, int pathLength, int tier)
-	: position(position), graph(graph), hCost(hCost), pathLength(pathLength), tier(tier) {}
-
-AStarState::AStarState(AStarState&& other) noexcept
-	: position(other.position),
-	graph(std::move(other.graph)),
-	hCost(other.hCost),
-	pathLength(other.pathLength),
-	tier(other.tier) {}
-
-AStarState::AStarState(const AStarState& other)
-	: position(other.position),
-	graph(other.graph),
-	hCost(other.hCost),
-	pathLength(other.pathLength),
-	tier(other.tier) {}
-
-bool AStarState::operator>(const AStarState& other) const {
-	int fCost1 = pathLength + hCost;
-	int fCost2 = other.pathLength + other.hCost;
-	if (fCost1 != fCost2) return fCost1 > fCost2;
-	return tier > other.tier;
-}
-
-AStarState& AStarState::operator=(const AStarState& other) {
-	position = other.position;
-	graph = other.graph;
-	hCost = other.hCost;
-	pathLength = other.pathLength;
-	tier = other.tier;
-	return *this;
-}
-
-AStarState& AStarState::operator=(AStarState&& other) noexcept {
-	position = other.position;
-	graph = std::move(other.graph);
-	hCost = other.hCost;
-	pathLength = other.pathLength;
-	tier = other.tier;
-	return *this;
-}
-
-Graph AStar::Solve(const Graph& startingGraph) {
-	if (startingGraph.GetTerminals().size() != 2) {
-		throw Error::SolverError("Graph must have exactly two terminals");
-	}
-
-	Graph::NodePtr start = startingGraph.GetTerminals()[0];
-	Graph::NodePtr end = startingGraph.GetTerminals()[1];
-
-	PriorityQueue openSet;
-	std::unordered_map<Graph::NodePtr, int> gCosts;
-
-	gCosts[start] = 0;
+	const Config& config = graph.GetConfig();
+	const std::unordered_set<Hex>& terminals = graph.GetTerminals();
+	const std::vector<Aspect>& aspects = config.GetAspects();
+	int32_t gridSize = config.GetGridSize();
+	static constexpr int32_t MAX_INT = std::numeric_limits<int32_t>::max();
 
 	openSet.push({
-		start->getPosition(),
-		std::move(Graph(startingGraph)),
-		start->Distance(*end),
-		0,
-		start->getAspect()->getTier()
+		start,
+		graph.At(start).GetAspectId(),
+		Hex::Distance(start, end), // hCost
+		0, // gCost
+		aspects[graph.At(start).GetAspectId()].GetTier(),
+		graph.GetPlacementMask()
 	});
 
 	while (!openSet.empty()) {
-		AStarState currentState = std::move(openSet.top());
+		State currentState = std::move(openSet.top());
 		openSet.pop();
 
-		Graph::NodePtr node = currentState.graph.at(currentState.position);
-		const Graph& graph = currentState.graph;
+		if (currentState.position == end) {
+			std::vector<State> path;
+			while (currentState.position != start) {
+				path.push_back(currentState);
+				currentState = parents.at(currentState);
+			}
+			std::reverse(path.begin(), path.end());
+			return path;
+		}
 
-		if (node == end) return graph;
+		for (const Hex& neighbor : currentState.position.GetNeighboringPositions()) {
+			if (Hex::Distance(neighbor, Hex::ZERO) >= gridSize) continue;
 
-		for (auto neighbor : graph.GetNeighbors(currentState.position)) {
-
-			int gCost = gCosts[node] + 1;
+			int32_t gCost = currentState.gCost + 1;
 			const auto it = gCosts.find(neighbor);
-			int neighborGCost = it == gCosts.end()
-				? std::numeric_limits<int>::max()
-				: it->second;
+			int32_t neighborGCost = it == gCosts.end() ? MAX_INT : it->second;
 
 			if (gCost >= neighborGCost) continue;
 
 			gCosts.insert_or_assign(neighbor, gCost);
 
-			Graph newGraph(graph);
-			if (!newGraph.IsTerminal(neighbor)) {
-				newGraph.Upsert(neighbor->getPosition(), neighbor->getAspect());
-			}
+			if (currentState.placementMask & Graph::HEX_ENCODINGS.at(neighbor)) {
+				if (!terminals.contains(neighbor)) continue; // If we're not looking at a terminal (aka backtracking)
+				int32_t existingAspect = graph.At(neighbor).GetAspectId();
 
-			openSet.push({
-				neighbor->getPosition(),
-				std::move(newGraph),
-				neighbor->Distance(*end),
-				gCost,
-				neighbor->getAspect()->getTier()
-			});
+				State newState = {
+					neighbor,
+					graph.At(neighbor).GetAspectId(),
+					Hex::Distance(neighbor, end),
+					gCost,
+					aspects[existingAspect].GetTier(),
+					currentState.placementMask | Graph::HEX_ENCODINGS.at(neighbor)
+				};
+
+				openSet.push(newState);
+				parents.insert_or_assign(newState, currentState);
+			} else {
+				for (int32_t aspectId : aspects[currentState.aspectId].GetLinks()) {
+					State newState = {
+						neighbor,
+						aspectId,
+						Hex::Distance(neighbor, end),
+						gCost,
+						aspects[aspectId].GetTier(),
+						currentState.placementMask | Graph::HEX_ENCODINGS.at(neighbor)
+					};
+	
+					openSet.push(newState);
+					parents.insert_or_assign(newState, currentState);
+				}
+			}
 		}
 	}
 
-	throw Error::SolverError("No path found");
+	return std::vector<State>();
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace TCSolver {
+namespace ryml {
 
 enum class NodeType {
 	Map,

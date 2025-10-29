@@ -1,6 +1,6 @@
 grid-size: 3
 
-static-nodes:
+terminals:
   - aspect:
     position: [1, -1]
   - aspect: lux

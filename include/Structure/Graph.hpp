@@ -1,54 +1,188 @@
 #pragma once
 
-#include <memory>
 #include <unordered_map>
+#include <unordered_set>
 
+#include "Config.hpp"
 #include "Hex.hpp"
 #include "Node.hpp"
-#include "NodeManager.hpp"
 
 namespace TCSolver {
 
 class Graph {
-
 public:
-	using NodePtr = std::shared_ptr<Node>;
-	using Graph_t = std::unordered_map<Hex, NodePtr>;
+	static std::unordered_map<Hex, uint64_t> HEX_ENCODINGS;
+	// static std::unordered_map<uint64_t, Hex> HEX_DECODINGS;
+
+	using Graph_t = std::unordered_map<Hex, Node>;
+
+	Graph(const Config& config) noexcept;
+	~Graph() noexcept = default;
+
+	Graph(Graph&& other) = delete;
+	Graph& operator=(Graph&& other) = delete;
+	Graph(const Graph& other) = delete;
+	Graph& operator=(const Graph& other) = delete;
+
+	Graph_t::iterator begin() noexcept { return nodes.begin(); };
+	Graph_t::iterator end() noexcept { return nodes.end(); };
+	Graph_t::const_iterator cbegin() const noexcept { return nodes.cbegin(); }
+	Graph_t::const_iterator cend() const noexcept { return nodes.cend(); }
+
+	const Node& Add(Hex position, int32_t aspectId);
+	const Node& At(Hex position) const;
+
+	int32_t GetSideLength() const { return sideLength; };
+	void AddTerminals(const std::vector<Hex>& newTerminals);
+	const std::unordered_set<Hex>& GetTerminals() const { return terminals; }
+	bool IsTerminal(Hex position) const { return terminals.contains(position); };
+	const Config& GetConfig() const { return config; }
+
+	// std::vector<NodePtr> GetNeighbors(Hex position) const;
+
+	uint64_t GetPlacementMask() const;
+
+	bool Contains(Hex position) const
+		{ return Hex::Distance(Hex::ZERO, position) < sideLength && nodes.contains(position); }
+
+	void Print() const;
 
 private:
 	int sideLength;
 
+	const Config& config;
 	Graph_t nodes;
-	std::vector<NodePtr> terminals;
-
-	std::shared_ptr<NodeManager> manager;
-
-public:
-	Graph(int sideLength, std::shared_ptr<NodeManager> manager);
-	Graph(const Graph& other);
-	Graph(Graph&& other) noexcept;
-
-	Graph_t::iterator begin();
-	Graph_t::iterator end();
-	Graph_t::const_iterator begin() const noexcept;
-	Graph_t::const_iterator end() const noexcept;
-
-	NodePtr Upsert(Hex position, const Aspect* aspect);
-	NodePtr Upsert(Node&& node);
-	NodePtr at(Hex position) const;
-
-	int GetSideLength() const;
-	const void AddTerminals(std::vector<Node>&& newTerminals);
-	const std::vector<NodePtr>& GetTerminals() const;
-	bool IsTerminal(NodePtr node) const;
-	std::vector<NodePtr> GetNeighbors(Hex position) const;
-
-	bool Contains(Hex position) const;
-
-	void Print() const;
-
-	Graph& operator=(const Graph& other);
-	Graph& operator=(Graph&& other) noexcept;
+	std::unordered_set<Hex> terminals;
 };
+
+inline std::unordered_map<Hex, uint64_t> Graph::HEX_ENCODINGS = {
+	{ {-4,  0}, 0x0000'0000'0000'0001ULL },
+	{ {-4,  1}, 0x0000'0000'0000'0002ULL },
+	{ {-4,  2}, 0x0000'0000'0000'0004ULL },
+	{ {-4,  3}, 0x0000'0000'0000'0008ULL },
+	{ {-4,  4}, 0x0000'0000'0000'0010ULL },
+	{ {-3, -1}, 0x0000'0000'0000'0020ULL },
+	{ {-3,  0}, 0x0000'0000'0000'0040ULL },
+	{ {-3,  1}, 0x0000'0000'0000'0080ULL },
+	{ {-3,  2}, 0x0000'0000'0000'0100ULL },
+	{ {-3,  3}, 0x0000'0000'0000'0200ULL },
+	{ {-3,  4}, 0x0000'0000'0000'0400ULL },
+	{ {-2, -2}, 0x0000'0000'0000'0800ULL },
+	{ {-2, -1}, 0x0000'0000'0000'1000ULL },
+	{ {-2,  0}, 0x0000'0000'0000'2000ULL },
+	{ {-2,  1}, 0x0000'0000'0000'4000ULL },
+	{ {-2,  2}, 0x0000'0000'0000'8000ULL },
+	{ {-2,  3}, 0x0000'0000'0001'0000ULL },
+	{ {-2,  4}, 0x0000'0000'0002'0000ULL },
+	{ {-1, -3}, 0x0000'0000'0004'0000ULL },
+	{ {-1, -2}, 0x0000'0000'0008'0000ULL },
+	{ {-1, -1}, 0x0000'0000'0010'0000ULL },
+	{ {-1,  0}, 0x0000'0000'0020'0000ULL },
+	{ {-1,  1}, 0x0000'0000'0040'0000ULL },
+	{ {-1,  2}, 0x0000'0000'0080'0000ULL },
+	{ {-1,  3}, 0x0000'0000'0100'0000ULL },
+	{ {-1,  4}, 0x0000'0000'0200'0000ULL },
+	{ { 0, -4}, 0x0000'0000'0400'0000ULL },
+	{ { 0, -3}, 0x0000'0000'0800'0000ULL },
+	{ { 0, -2}, 0x0000'0000'1000'0000ULL },
+	{ { 0, -1}, 0x0000'0000'2000'0000ULL },
+	{ { 0,  0}, 0x0000'0000'4000'0000ULL },
+	{ { 0,  1}, 0x0000'0000'8000'0000ULL },
+	{ { 0,  2}, 0x0000'0001'0000'0000ULL },
+	{ { 0,  3}, 0x0000'0002'0000'0000ULL },
+	{ { 0,  4}, 0x0000'0004'0000'0000ULL },
+	{ { 1, -4}, 0x0000'0008'0000'0000ULL },
+	{ { 1, -3}, 0x0000'0010'0000'0000ULL },
+	{ { 1, -2}, 0x0000'0020'0000'0000ULL },
+	{ { 1, -1}, 0x0000'0040'0000'0000ULL },
+	{ { 1,  0}, 0x0000'0080'0000'0000ULL },
+	{ { 1,  1}, 0x0000'0100'0000'0000ULL },
+	{ { 1,  2}, 0x0000'0200'0000'0000ULL },
+	{ { 1,  3}, 0x0000'0400'0000'0000ULL },
+	{ { 2, -4}, 0x0000'0800'0000'0000ULL },
+	{ { 2, -3}, 0x0000'1000'0000'0000ULL },
+	{ { 2, -2}, 0x0000'2000'0000'0000ULL },
+	{ { 2, -1}, 0x0000'4000'0000'0000ULL },
+	{ { 2,  0}, 0x0000'8000'0000'0000ULL },
+	{ { 2,  1}, 0x0001'0000'0000'0000ULL },
+	{ { 2,  2}, 0x0002'0000'0000'0000ULL },
+	{ { 3, -4}, 0x0004'0000'0000'0000ULL },
+	{ { 3, -3}, 0x0008'0000'0000'0000ULL },
+	{ { 3, -2}, 0x0010'0000'0000'0000ULL },
+	{ { 3, -1}, 0x0020'0000'0000'0000ULL },
+	{ { 3,  0}, 0x0040'0000'0000'0000ULL },
+	{ { 3,  1}, 0x0080'0000'0000'0000ULL },
+	{ { 4, -4}, 0x0100'0000'0000'0000ULL },
+	{ { 4, -3}, 0x0200'0000'0000'0000ULL },
+	{ { 4, -2}, 0x0400'0000'0000'0000ULL },
+	{ { 4, -1}, 0x0800'0000'0000'0000ULL },
+	{ { 4,  0}, 0x1000'0000'0000'0000ULL }
+	// 3 unused bits
+};
+
+// inline std::unordered_map<uint64_t, Hex> Graph::HEX_DECODINGS = {
+// 	{ 0x0000'0000'0000'0001ULL, {-4,  0} },
+// 	{ 0x0000'0000'0000'0002ULL, {-4,  1} },
+// 	{ 0x0000'0000'0000'0004ULL, {-4,  2} },
+// 	{ 0x0000'0000'0000'0008ULL, {-4,  3} },
+// 	{ 0x0000'0000'0000'0010ULL, {-4,  4} },
+// 	{ 0x0000'0000'0000'0020ULL, {-3, -1} },
+// 	{ 0x0000'0000'0000'0040ULL, {-3,  0} },
+// 	{ 0x0000'0000'0000'0080ULL, {-3,  1} },
+// 	{ 0x0000'0000'0000'0100ULL, {-3,  2} },
+// 	{ 0x0000'0000'0000'0200ULL, {-3,  3} },
+// 	{ 0x0000'0000'0000'0400ULL, {-3,  4} },
+// 	{ 0x0000'0000'0000'0800ULL, {-2, -2} },
+// 	{ 0x0000'0000'0000'1000ULL, {-2, -1} },
+// 	{ 0x0000'0000'0000'2000ULL, {-2,  0} },
+// 	{ 0x0000'0000'0000'4000ULL, {-2,  1} },
+// 	{ 0x0000'0000'0000'8000ULL, {-2,  2} },
+// 	{ 0x0000'0000'0001'0000ULL, {-2,  3} },
+// 	{ 0x0000'0000'0002'0000ULL, {-2,  4} },
+// 	{ 0x0000'0000'0004'0000ULL, {-1, -3} },
+// 	{ 0x0000'0000'0008'0000ULL, {-1, -2} },
+// 	{ 0x0000'0000'0010'0000ULL, {-1, -1} },
+// 	{ 0x0000'0000'0020'0000ULL, {-1,  0} },
+// 	{ 0x0000'0000'0040'0000ULL, {-1,  1} },
+// 	{ 0x0000'0000'0080'0000ULL, {-1,  2} },
+// 	{ 0x0000'0000'0100'0000ULL, {-1,  3} },
+// 	{ 0x0000'0000'0200'0000ULL, {-1,  4} },
+// 	{ 0x0000'0000'0400'0000ULL, { 0, -4} },
+// 	{ 0x0000'0000'0800'0000ULL, { 0, -3} },
+// 	{ 0x0000'0000'1000'0000ULL, { 0, -2} },
+// 	{ 0x0000'0000'2000'0000ULL, { 0, -1} },
+// 	{ 0x0000'0000'4000'0000ULL, { 0,  0} },
+// 	{ 0x0000'0000'8000'0000ULL, { 0,  1} },
+// 	{ 0x0000'0001'0000'0000ULL, { 0,  2} },
+// 	{ 0x0000'0002'0000'0000ULL, { 0,  3} },
+// 	{ 0x0000'0004'0000'0000ULL, { 0,  4} },
+// 	{ 0x0000'0008'0000'0000ULL, { 1, -4} },
+// 	{ 0x0000'0010'0000'0000ULL, { 1, -3} },
+// 	{ 0x0000'0020'0000'0000ULL, { 1, -2} },
+// 	{ 0x0000'0040'0000'0000ULL, { 1, -1} },
+// 	{ 0x0000'0080'0000'0000ULL, { 1,  0} },
+// 	{ 0x0000'0100'0000'0000ULL, { 1,  1} },
+// 	{ 0x0000'0200'0000'0000ULL, { 1,  2} },
+// 	{ 0x0000'0400'0000'0000ULL, { 1,  3} },
+// 	{ 0x0000'0800'0000'0000ULL, { 2, -4} },
+// 	{ 0x0000'1000'0000'0000ULL, { 2, -3} },
+// 	{ 0x0000'2000'0000'0000ULL, { 2, -2} },
+// 	{ 0x0000'4000'0000'0000ULL, { 2, -1} },
+// 	{ 0x0000'8000'0000'0000ULL, { 2,  0} },
+// 	{ 0x0001'0000'0000'0000ULL, { 2,  1} },
+// 	{ 0x0002'0000'0000'0000ULL, { 2,  2} },
+// 	{ 0x0004'0000'0000'0000ULL, { 3, -4} },
+// 	{ 0x0008'0000'0000'0000ULL, { 3, -3} },
+// 	{ 0x0010'0000'0000'0000ULL, { 3, -2} },
+// 	{ 0x0020'0000'0000'0000ULL, { 3, -1} },
+// 	{ 0x0040'0000'0000'0000ULL, { 3,  0} },
+// 	{ 0x0080'0000'0000'0000ULL, { 3,  1} },
+// 	{ 0x0100'0000'0000'0000ULL, { 4, -4} },
+// 	{ 0x0200'0000'0000'0000ULL, { 4, -3} },
+// 	{ 0x0400'0000'0000'0000ULL, { 4, -2} },
+// 	{ 0x0800'0000'0000'0000ULL, { 4, -1} },
+// 	{ 0x1000'0000'0000'0000ULL, { 4,  0} }
+// 	// 3 unused bits
+// };
 
 }

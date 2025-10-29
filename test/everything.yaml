@@ -1,6 +1,6 @@
 grid-size: 5
 
-static-nodes:
+terminals:
   - aspect: stronito
     position: [-4, 0]
   - aspect: electrum
