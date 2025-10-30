@@ -26,7 +26,7 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 	});
 
 	while (!openSet.empty()) {
-		State currentState = std::move(openSet.top());
+		State currentState = openSet.top();
 		openSet.pop();
 
 		if (currentState.position == end) {

@@ -6,15 +6,6 @@
 
 TCSolver::Graph::Graph(const Config& config) noexcept : config(config), sideLength(config.GetGridSize()) {
 	assert(config.GetGridSize() > 0 && config.GetGridSize() <= 5 && "Grid size must be between 1 and 5");
-	// for (int32_t j = 1 - sideLength; j < sideLength; j++) {
-	// 	for (
-	// 		int32_t i = std::max(1 - sideLength - j, 1 - sideLength);
-	// 		i <= std::min(sideLength - 1, sideLength - 1 - j);
-	// 		++i
-	// 	) {
-	// 		Add(Hex(i, j), -1);
-	// 	}
-	// }
 }
 
 const TCSolver::Node& TCSolver::Graph::Add(Hex position, int32_t aspectId) {
@@ -53,27 +44,6 @@ uint64_t TCSolver::Graph::GetPlacementMask() const {
 	}
 	return mask;
 }
-
-// std::vector<Graph::NodePtr> Graph::GetNeighbors(Hex position) const {
-// 	std::vector<NodePtr> neighbors;
-
-// 	for (const auto* aspect : at(position)->getAspect()->getRelated()) {
-// 		for (const auto& hex : position.GetNeighboringPositions()) {
-// 			if (hex.Distance(Hex::ZERO) >= sideLength) continue;
-// 			const auto it = nodes.find(hex);
-// 			if (it == nodes.end()) continue;
-// 			NodePtr node = manager->ComputeIfAbsent(hex, aspect);
-// 			if (
-// 				it->second->getAspect() != nullptr
-// 				&& !IsTerminal(node)
-// 			) continue;
-
-// 			neighbors.push_back(node);
-// 		}
-// 	}
-
-// 	return neighbors;
-// }
 
 void TCSolver::Graph::Print() const {
 	int radius = sideLength - 1;
