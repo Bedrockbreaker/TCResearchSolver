@@ -48,15 +48,16 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 
 			if (gCost >= neighborGCost) continue;
 
-			gCosts.insert_or_assign(neighbor, gCost);
-
 			if (currentState.placementMask & Graph::HEX_ENCODINGS.at(neighbor)) {
 				if (!terminals.contains(neighbor)) continue; // If we're not looking at a terminal (aka backtracking)
 				int32_t existingAspect = graph.At(neighbor).GetAspectId();
 
+				std::vector<int32_t> links = aspects[currentState.aspectId].GetLinks();
+				if (std::find(links.begin(), links.end(), existingAspect) == links.end()) continue;
+
 				State newState = {
 					neighbor,
-					graph.At(neighbor).GetAspectId(),
+					existingAspect,
 					Hex::Distance(neighbor, end),
 					gCost,
 					aspects[existingAspect].GetTier(),
@@ -64,8 +65,11 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 				};
 
 				openSet.push(newState);
+				gCosts.insert_or_assign(neighbor, gCost);
 				parents.insert_or_assign(newState, currentState);
 			} else {
+				gCosts.insert_or_assign(neighbor, gCost);
+
 				for (int32_t aspectId : aspects[currentState.aspectId].GetLinks()) {
 					State newState = {
 						neighbor,
@@ -75,7 +79,7 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 						aspects[aspectId].GetTier(),
 						currentState.placementMask | Graph::HEX_ENCODINGS.at(neighbor)
 					};
-	
+
 					openSet.push(newState);
 					parents.insert_or_assign(newState, currentState);
 				}
