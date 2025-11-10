@@ -15,8 +15,8 @@ public:
 	constexpr Node(Hex position, int32_t aspectId) noexcept : position(position), aspectId(aspectId) {};
 	constexpr ~Node() = default;
 
-	Node(const Node& other) = default;
-	Node& operator=(const Node& other) = default;
+	constexpr Node(const Node& other) noexcept = default;
+	constexpr Node& operator=(const Node& other) noexcept = default;
 	Node(Node&& other) = delete;
 	Node& operator=(Node&& other) = delete;
 
