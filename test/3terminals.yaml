@@ -1,0 +1,170 @@
+grid-size: 3
+
+terminals:
+  - aspect:
+    position: [1, -1]
+  # - aspect: perditio
+  #   position: [1, -2]
+  - aspect: lux
+    position: [2, -2]
+  - aspect: praecantatio
+    position: [-1, 2]
+  - aspect: ignis
+    position: [-2, 2]
+
+aspects:
+  # Tier 1 (Primal)
+  aer:
+    parent1:
+    parent2:
+    amount: -1
+  aqua:
+    parent1:
+    parent2:
+    amount: 0
+  ignis:
+    parent1:
+    parent2:
+    amount: 42
+  ordo:
+    parent1:
+    parent2:
+  perditio:
+    parent1:
+    parent2:
+  terra:
+    parent1:
+    parent2:
+  # Tier 2
+  gelum:
+    parent1: ignis
+    parent2: perditio
+  lux:
+    parent1: ignis
+    parent2: aer
+  motus:
+    parent1: ordo
+    parent2: aer
+  permutatio:
+    parent1: ordo
+    parent2: perditio
+  potentia:
+    parent1: ordo
+    parent2: ignis
+  tempestas:
+    parent1: aer
+    parent2: aqua
+  vacuos:
+    parent1: aer
+    parent2: perditio
+  venenum:
+    parent1: perditio
+    parent2: aqua
+  victus:
+    parent1: aqua
+    parent2: terra
+  vitreus:
+    parent1: terra
+    parent2: ordo
+  # Tier 3
+  bestia:
+    parent1: motus
+    parent2: victus
+  fames:
+    parent1: victus
+    parent2: vacuos
+  herba:
+    parent1: victus
+    parent2: terra
+  iter:
+    parent1: terra
+    parent2: motus
+  limus:
+    parent1: aqua
+    parent2: victus
+  metallum:
+    parent1: terra
+    parent2: vitreus
+  mortuus:
+    parent1: perditio
+    parent2: victus
+  praecantatio:
+    parent1: potentia
+    parent2: vacuos
+  sano:
+    parent1: ordo
+    parent2: victus
+  tenebrae:
+    parent1: lux
+    parent2: vacuos
+  vinculum:
+    parent1: perditio
+    parent2: motus
+  volatus:
+    parent1: aer
+    parent2: motus
+  # Tier 4
+  alienis:
+    parent1: tenebrae
+    parent2: vacuos
+  arbor:
+    parent1: aer
+    parent2: herba
+  auram:
+    parent1: aer
+    parent2: praecantatio
+  corpus:
+    parent1: mortuus
+    parent2: bestia
+  exanimis:
+    parent1: motus
+    parent2: mortuus
+  spiritus:
+    parent1: victus
+    parent2: mortuus
+  vitium:
+    parent1: perditio
+    parent2: praecantatio
+  # Tier 5
+  cognitio:
+    parent1: ignis
+    parent2: spiritus
+  sensus:
+    parent1: aer
+    parent2: spiritus
+  # Tier 6
+  humanus:
+    parent1: bestia
+    parent2: cognitio
+  # Tier 7
+  instrumentum:
+    parent1: ordo
+    parent2: humanus
+  lucrum:
+    parent1: fames
+    parent2: humanus
+  messis:
+    parent1: humanus
+    parent2: herba
+  perfodio:
+    parent1: terra
+    parent2: humanus
+  # Tier 8
+  fabrico:
+    parent1: instrumentum
+    parent2: humanus
+  machina:
+    parent1: motus
+    parent2: instrumentum
+  meto:
+    parent1: messis
+    parent2: instrumentum
+  pannus:
+    parent1: instrumentum
+    parent2: bestia
+  telum:
+    parent1: ignis
+    parent2: instrumentum
+  tutamen:
+    parent1: terra
+    parent2: instrumentum

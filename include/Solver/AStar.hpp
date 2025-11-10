@@ -55,7 +55,7 @@ public:
 	constexpr friend bool operator!=(const State& lhs, const State& rhs) noexcept { return !(lhs == rhs); }
 };
 
-std::vector<State> Solve(const Graph& graph, Hex start, Hex end);
+bool Solve(const Graph& graph, Hex start, Hex end, std::vector<State>& path);
 
 }
 

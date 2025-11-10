@@ -5,7 +5,7 @@
 #include "AStar.hpp"
 #include "Solver.hpp"
 
-std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end) {
+bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<State>& path) {
 	std::priority_queue<State> openSet;
 	std::unordered_map<uint32_t, int32_t> gCosts;
 	std::unordered_map<State, State> parents;
@@ -30,13 +30,12 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 		openSet.pop();
 
 		if (currentState.position == end) {
-			std::vector<State> path;
 			while (currentState.position != start) {
 				path.push_back(currentState);
 				currentState = parents.at(currentState);
 			}
 			std::reverse(path.begin(), path.end());
-			return path;
+			return true;
 		}
 
 		for (const Hex& neighbor : currentState.position.GetNeighboringPositions()) {
@@ -94,5 +93,5 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 		}
 	}
 
-	return std::vector<State>();
+	return false;
 }

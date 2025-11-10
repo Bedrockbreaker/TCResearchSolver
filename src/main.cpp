@@ -1,7 +1,9 @@
+#include <chrono>
 #include <iostream>
 
 #include "AStar.hpp"
 #include "Config.hpp"
+#include "DreyfusWagner.hpp"
 #include "Graph.hpp"
 #include "Hex.hpp"
 
@@ -25,15 +27,63 @@ int main(int argc, char* argv[]) {
 	}
 	graph.Print();
 
-	std::vector<TCSolver::AStar::State> solution = TCSolver::AStar::Solve(
-		graph,
-		*graph.GetTerminals().cbegin(),
-		*(++graph.GetTerminals().cbegin())
-	);
+	int32_t terminals = graph.GetTerminals().size();
+	if (terminals <= 0) {
+		std::cerr << "Not enough terminals" << std::endl;
+		return 1;
+	} else if (terminals == 1) {
+		// TODO: explore just the neighbors and choose the cheapest
+	} else if (terminals == 2) {
+		std::vector<TCSolver::AStar::State> solution;
 
-	std::cout << "Solution: " << std::endl;
-	for (const TCSolver::AStar::State& state : solution) {
-		if (!graph.IsTerminal(state.position)) graph.Add(state.position, state.aspectId);
+		auto start = std::chrono::high_resolution_clock::now();
+
+		bool bSuccess = TCSolver::AStar::Solve(graph,
+			*graph.GetTerminals().cbegin(),
+			*(++graph.GetTerminals().cbegin()),
+			solution
+		);
+
+		auto end = std::chrono::high_resolution_clock::now();
+
+		if (!bSuccess) {
+			std::cerr
+				<< "No solution found (took "
+				<< std::chrono::duration_cast<std::chrono::microseconds>(end - start)
+				<< ")"
+				<< std::endl;
+			return 0;
+		}
+
+		std::cout
+			<< "Solution found in "
+			<< std::chrono::duration_cast<std::chrono::microseconds>(end - start)
+			<< ": "
+			<< std::endl;
+
+		for (const TCSolver::AStar::State& state : solution) {
+			if (!graph.IsTerminal(state.position)) graph.Add(state.position, state.aspectId);
+		}
+
+		graph.Print();
+	} else if (terminals <= 15) {
+		auto start = std::chrono::high_resolution_clock::now();
+
+		std::vector<TCSolver::DreyfusWagner::State> solution = TCSolver::DreyfusWagner::Solve(graph);
+
+		auto end = std::chrono::high_resolution_clock::now();
+
+		std::cout
+			<< "Solution found in "
+			<< std::chrono::duration_cast<std::chrono::milliseconds>(end - start)
+			<< ": "
+			<< std::endl;
+		// for (const TCSolver::DreyfusWagner::State& state : solution) {
+		// 	if (!graph.IsTerminal(state.position)) graph.Add(state.position, state.aspectId);
+		// }
+		// graph.Print();
+	} else {
+		std::cerr << "Too many terminals" << std::endl;
+		return 1;
 	}
-	graph.Print();
 }
