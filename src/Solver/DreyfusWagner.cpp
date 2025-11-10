@@ -142,15 +142,13 @@ void TCSolver::DreyfusWagner::Dijkstra(
 					if (!terminals.contains(neighbor)) continue;
 
 					int32_t existingAspect = graph.At(neighbor).GetAspectId();
-					const std::vector<int32_t>& links = aspects[currentState.aspectId].GetLinks();
-					if (std::find(links.begin(), links.end(), existingAspect) == links.end()) continue;
+					if (!aspects[currentState.aspectId].GetLinks().contains(existingAspect)) continue;
 
 					uint16_t neighborNodeMask = Solver::GetMask(neighbor, existingAspect);
-					int32_t cost = currentState.cost + 1;
-
 					const auto it = dp[terminalPositionMask].find(neighborNodeMask);
 					int32_t dpCost = it == dp[terminalPositionMask].end() ?  MAX_INT : it->second;
-
+					
+					int32_t cost = currentState.cost; // Don't add anything -- Using an existing aspect not placed by us
 					if (dpCost <= cost) continue;
 
 					dp[terminalPositionMask][neighborNodeMask] = cost;

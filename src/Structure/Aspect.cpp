@@ -14,18 +14,15 @@ TCSolver::Aspect::Aspect(int32_t id, const std::string& name, int32_t parent1, i
 	assert(id > -1 && "id must be non-negative");
 	assert(parent1 > -1 && parent2 > -1 && "parent1 and parent2 must be non-negative");
 
-	related.reserve(2);
-	related.push_back(parent1);
-	related.push_back(parent2);
+	related.emplace(parent1);
+	related.emplace(parent2);
 }
 
-void TCSolver::Aspect::AddChild(int32_t child) {
-	if (child <= -1) throw std::invalid_argument("child must be non-negative");
+void TCSolver::Aspect::AddRelated(int32_t other) {
+	if (other <= -1) throw std::invalid_argument("Related aspect id must be non-negative");
 
-	// Intentionally throw if child already exists
-	if (std::find(children.begin(), children.end(), child) != children.end())
-		throw std::invalid_argument("child already exists");
+	// Intentionally throw if related already exists
+	if (related.contains(other)) throw std::invalid_argument("Related aspect already exists");
 
-	children.push_back(child);
-	related.push_back(child);
+	related.emplace(other);
 }

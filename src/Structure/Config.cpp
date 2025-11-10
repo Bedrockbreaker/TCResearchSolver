@@ -116,8 +116,8 @@ void TCSolver::Config::CreateAspectFromYamlNode(const ryml::ConstNodeRef& node) 
 
 	aspects.emplace_back(aspectId, aspectName, parent1It->second, parent2It->second, tier);
 	aspectNames.emplace(aspectName, aspectId);
-	aspects[parent1It->second].AddChild(aspectId);
-	aspects[parent2It->second].AddChild(aspectId);
+	aspects[parent1It->second].AddRelated(aspectId);
+	aspects[parent2It->second].AddRelated(aspectId);
 }
 
 void TCSolver::Config::CreateGraphNodeFromYamlNode(const ryml::ConstNodeRef& node) {

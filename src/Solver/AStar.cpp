@@ -45,14 +45,13 @@ bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<
 				if (!terminals.contains(neighbor)) continue; // If we're not looking at a terminal (aka backtracking)
 
 				int32_t existingAspect = graph.At(neighbor).GetAspectId();
-				const std::vector<int32_t>& links = aspects[currentState.aspectId].GetLinks();
-				if (std::find(links.begin(), links.end(), existingAspect) == links.end()) continue;
+				if (!aspects[currentState.aspectId].GetLinks().contains(existingAspect)) continue;
 
-				int32_t gCost = currentState.gCost; // Don't add anything -- Using an existing aspect not placed by us
-				uint32_t neighborMask = Solver::GetMask(neighbor, existingAspect);
+				uint16_t neighborMask = Solver::GetMask(neighbor, existingAspect);
 				const auto it = gCosts.find(neighborMask);
 				int32_t neighborGCost = it == gCosts.end() ? MAX_INT : it->second;
 
+				int32_t gCost = currentState.gCost; // Don't add anything -- Using an existing aspect not placed by us
 				if (gCost >= neighborGCost) continue;
 
 				State newState = {
@@ -69,11 +68,11 @@ bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<
 				parents.insert_or_assign(newState, currentState);
 			} else {
 				for (int32_t aspectId : aspects[currentState.aspectId].GetLinks()) {
-					int32_t gCost = currentState.gCost + 1;
-					uint32_t neighborMask = Solver::GetMask(neighbor, aspectId);
+					uint16_t neighborMask = Solver::GetMask(neighbor, aspectId);
 					const auto it = gCosts.find(neighborMask);
 					int32_t neighborGCost = it == gCosts.end() ? MAX_INT : it->second;
 
+					int32_t gCost = currentState.gCost + 1;
 					if (gCost >= neighborGCost) continue;
 
 					State newState = {
