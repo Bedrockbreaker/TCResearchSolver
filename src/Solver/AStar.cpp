@@ -50,9 +50,9 @@ std::vector<TCSolver::AStar::State> TCSolver::AStar::Solve(const Graph& graph, H
 
 			if (currentState.placementMask & Graph::HEX_ENCODINGS.at(neighbor)) {
 				if (!terminals.contains(neighbor)) continue; // If we're not looking at a terminal (aka backtracking)
-				int32_t existingAspect = graph.At(neighbor).GetAspectId();
 
-				std::vector<int32_t> links = aspects[currentState.aspectId].GetLinks();
+				int32_t existingAspect = graph.At(neighbor).GetAspectId();
+				const std::vector<int32_t>& links = aspects[currentState.aspectId].GetLinks();
 				if (std::find(links.begin(), links.end(), existingAspect) == links.end()) continue;
 
 				State newState = {
