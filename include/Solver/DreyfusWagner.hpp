@@ -4,6 +4,7 @@
 #include <queue>
 
 #include "Graph.hpp"
+#include "Solver.hpp"
 
 namespace TCSolver::DreyfusWagner {
 
@@ -17,13 +18,14 @@ public:
 	constexpr friend bool operator<(const State& lhs, const State& rhs) noexcept { return lhs.cost > rhs.cost; }
 };
 
-std::vector<State> Solve(const Graph& graph);
+bool Solve(const Graph& graph);
 
 void Dijkstra(
 	const Graph& graph,
-	const std::unordered_set<uint16_t>& initialNodes,
-	std::unordered_map<uint64_t, std::unordered_map<uint16_t, int32_t>>& dp,
-	std::unordered_set<uint16_t>& allNodes
+	const std::unordered_set<Hex>& initialPositions,
+	std::unordered_map<uint128_t, std::unordered_map<uint128_t, int32_t>>& dp,
+	std::unordered_map<uint128_t, uint128_t>& parents,
+	std::unordered_set<uint128_t>& allNodes
 );
 
 struct MaskPriority {

@@ -2,6 +2,7 @@
 
 #include "Hex.hpp"
 #include "Graph.hpp"
+#include "Solver.hpp"
 
 namespace TCSolver::AStar {
 
@@ -59,22 +60,19 @@ bool Solve(const Graph& graph, Hex start, Hex end, std::vector<State>& path);
 
 }
 
-static inline uint64_t SplitMix64(uint64_t x) noexcept {
-	x += 0x9E3779B97F4A7C15ULL;
-	x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
-	x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
-	return x ^ (x >> 31);
-}
-
 namespace std {
 template<>
 struct hash<TCSolver::AStar::State> {
 	size_t operator()(const TCSolver::AStar::State& state) const noexcept {
 		uint64_t hash = 0x9E3779B97F4A7C15ULL;
-		hash ^= SplitMix64(static_cast<uint64_t>(state.aspectId) | static_cast<uint64_t>(state.hCost) << 32);
-		hash ^= SplitMix64(static_cast<uint64_t>(state.gCost) | static_cast<uint64_t>(state.tier) << 32);
+		hash ^= TCSolver::Solver::SplitMix64(
+			static_cast<uint64_t>(state.aspectId) | static_cast<uint64_t>(state.hCost) << 32
+		);
+		hash ^= TCSolver::Solver::SplitMix64(
+			static_cast<uint64_t>(state.gCost) | static_cast<uint64_t>(state.tier) << 32
+		);
 		hash ^= std::hash<TCSolver::Hex>()(state.position);
-		hash ^= SplitMix64(state.placementMask);
+		hash ^= TCSolver::Solver::SplitMix64(state.placementMask);
 		return static_cast<size_t>(hash);
 	}
 };

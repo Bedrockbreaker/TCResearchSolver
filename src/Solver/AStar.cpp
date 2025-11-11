@@ -7,7 +7,7 @@
 
 bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<State>& path) {
 	std::priority_queue<State> openSet;
-	std::unordered_map<uint32_t, int32_t> gCosts;
+	std::unordered_map<uint128_t, int32_t> gCosts;
 	std::unordered_map<State, State> parents;
 
 	const Config& config = graph.GetConfig();
@@ -47,7 +47,7 @@ bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<
 				int32_t existingAspect = graph.At(neighbor).GetAspectId();
 				if (!aspects[currentState.aspectId].GetLinks().contains(existingAspect)) continue;
 
-				uint16_t neighborMask = Solver::GetMask(neighbor, existingAspect);
+				uint128_t neighborMask = Solver::GetMask(neighbor, existingAspect);
 				const auto it = gCosts.find(neighborMask);
 				int32_t neighborGCost = it == gCosts.end() ? MAX_INT : it->second;
 
@@ -68,7 +68,7 @@ bool TCSolver::AStar::Solve(const Graph& graph, Hex start, Hex end, std::vector<
 				parents.insert_or_assign(newState, currentState);
 			} else {
 				for (int32_t aspectId : aspects[currentState.aspectId].GetLinks()) {
-					uint16_t neighborMask = Solver::GetMask(neighbor, aspectId);
+					uint128_t neighborMask = Solver::GetMask(neighbor, aspectId);
 					const auto it = gCosts.find(neighborMask);
 					int32_t neighborGCost = it == gCosts.end() ? MAX_INT : it->second;
 

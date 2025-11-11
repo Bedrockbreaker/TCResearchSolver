@@ -14,8 +14,8 @@ TCSolver::Aspect::Aspect(int32_t id, const std::string& name, int32_t parent1, i
 	assert(id > -1 && "id must be non-negative");
 	assert(parent1 > -1 && parent2 > -1 && "parent1 and parent2 must be non-negative");
 
-	related.emplace(parent1);
-	related.emplace(parent2);
+	related.insert(parent1);
+	related.insert(parent2);
 }
 
 void TCSolver::Aspect::AddRelated(int32_t other) {
@@ -24,5 +24,5 @@ void TCSolver::Aspect::AddRelated(int32_t other) {
 	// Intentionally throw if related already exists
 	if (related.contains(other)) throw std::invalid_argument("Related aspect already exists");
 
-	related.emplace(other);
+	related.insert(other);
 }

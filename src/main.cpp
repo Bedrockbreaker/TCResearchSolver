@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 	} else if (terminals <= 15) {
 		auto start = std::chrono::high_resolution_clock::now();
 
-		std::vector<TCSolver::DreyfusWagner::State> solution = TCSolver::DreyfusWagner::Solve(graph);
+		bool bSuccess = TCSolver::DreyfusWagner::Solve(graph);
 
 		auto end = std::chrono::high_resolution_clock::now();
 

@@ -3,31 +3,31 @@
 #include "DreyfusWagner.hpp"
 #include "Solver.hpp"
 
-std::vector<TCSolver::DreyfusWagner::State> TCSolver::DreyfusWagner::Solve(const Graph& graph) {
+bool TCSolver::DreyfusWagner::Solve(const Graph& graph) {
 	static constexpr int32_t MAX_INT = std::numeric_limits<int32_t>::max();
-	
+
 	// Remove the first terminal to later use as the root for the final part of the algorithm
 	std::unordered_set<Hex> terminals = graph.GetTerminals();
 	Hex rootTerminal = *terminals.begin();
 	terminals.erase(terminals.begin());
 
-	// map[fromTerminalSet, toNode] = distance
-	std::unordered_map<uint64_t, std::unordered_map<uint16_t, int32_t>> dp(terminals.size());
-	std::unordered_set<uint16_t> allNodes;
+	// map[fromTerminalSetOrNodeMask, toNode] = distance
+	std::unordered_map<uint128_t, std::unordered_map<uint128_t, int32_t>> dp;
+	dp.reserve(std::max<size_t>(4, terminals.size() * 2));
+
+	std::unordered_set<uint128_t> allNodesSet;
+	allNodesSet.reserve(200000); // Heuristic from testing
+
+	// parents map used by Dijkstra as before
+	std::unordered_map<uint128_t, uint128_t> parents;
+	parents.reserve(262144); // Heuristic from testing
 
 	// 1. (Base case) Find the distance from each terminal to every other reachable node
 
-	std::unordered_set<uint16_t> initialNodes;
-	for (const Hex& terminal : terminals) {
-		initialNodes.insert(Solver::GetMask(terminal, graph.At(terminal).GetAspectId()));
-	}
+	Dijkstra(graph, graph.GetTerminals(), dp, parents, allNodesSet);
 
-	Dijkstra(graph, initialNodes, dp, allNodes);
-
-	// 1.5. Find the distance between every pair reachable nodes
-
-	std::unordered_set<uint16_t> _; // Do not care about the added nodes
-	Dijkstra(graph, allNodes, dp, _);
+	// Convert allNodesSet to a vector for much faster iteration
+	std::vector<uint128_t> allNodes(allNodesSet.begin(), allNodesSet.end());
 
 	// 2. Iterate over all combinatorial subsets of the terminals that are not empty and not equal to the full set
 
@@ -40,32 +40,68 @@ std::vector<TCSolver::DreyfusWagner::State> TCSolver::DreyfusWagner::Solve(const
 
 	// 3. For each subset...
 	while (!terminalSubsets.empty()) {
-		uint64_t subset = terminalSubsets.top();
+		uint64_t subsetD = terminalSubsets.top();
 		terminalSubsets.pop();
 
 		// Break down the mask into an iterable list of terminal positions
 		std::vector<uint64_t> terminalPositions;
 		for (int32_t i = 0; i < 64; ++i) {
-			if (subset & (1ULL << i)) terminalPositions.push_back(1ULL << i);
+			if (subsetD & (1ULL << i)) terminalPositions.push_back(1ULL << i);
 		}
 
+		int32_t count1 = 0;
+		int32_t count2 = 0;
+
 		// 4. For each node (J)...
-		for (uint16_t nodeMaskJ : allNodes) {
+		for (uint128_t nodeMaskJ : allNodes) {
 			int32_t minDistance = MAX_INT;
 
 			// 5. Remove a single terminal (E) from the subset (D)
 			// and find the minimum of distance(E,J) + distance(D-E,J)
 			for (uint64_t terminalE : terminalPositions) {
-				uint64_t subsetDMinusE = subset ^ terminalE;
-				int32_t distanceDMinusEToJ = dp[subsetDMinusE][nodeMaskJ];
-				int32_t distanceEToJ = dp[terminalE][nodeMaskJ];
-				minDistance = std::min(minDistance, distanceDMinusEToJ + distanceEToJ);
+				uint128_t subsetDMinusEMask = {subsetD ^ terminalE, 0};
+				uint128_t terminalEMask = {terminalE, 0};
+
+				auto itDMinusE = dp.find(subsetDMinusEMask);
+				if (itDMinusE == dp.end()) continue;
+				auto itDMinusEtoJ = itDMinusE->second.find(nodeMaskJ);
+				if (itDMinusEtoJ == itDMinusE->second.end()) continue;
+				int32_t distanceDMinusEToJ = itDMinusEtoJ->second;
+
+				auto itE = dp.find(terminalEMask);
+				if (itE == dp.end()) continue;
+				auto itEtoJ = itE->second.find(nodeMaskJ);
+				if (itEtoJ == itE->second.end()) continue;
+				int32_t distanceEToJ = itEtoJ->second;
+
+				if (distanceDMinusEToJ != MAX_INT && distanceEToJ != MAX_INT)
+					minDistance = std::min(minDistance, distanceDMinusEToJ + distanceEToJ);
 			}
 
+			++count1;
+			if (minDistance == MAX_INT) continue;
+			++count2;
+
 			// 6. For each node (I), dp[D][I] = min(dp[D][I], dp[J][I] + minDistance)
-			for (uint16_t nodeMaskI : allNodes) {
-				int32_t dpDI = dp[subset].find(nodeMaskI) == dp[subset].end() ? MAX_INT : dp[subset][nodeMaskI];
-				dp[subset][nodeMaskI] = std::min(dpDI, dp[subset][nodeMaskJ] + minDistance);
+			uint128_t subsetDMask = {subsetD, 0};
+			// Ensure dp[subsetDMask] exists (needs to be written to). Use reference to reduce lookups.
+			std::unordered_map<uint128_t, int32_t>& dpSubsetDMap = dp[subsetDMask];
+
+			// Instead of iterating over allNodes, iterate only over dp[nodeMaskJ]'s keys
+			auto itDpJ = dp.find(nodeMaskJ);
+			if (itDpJ == dp.end()) continue;
+			std::unordered_map<uint128_t, int32_t>& dpJMap = itDpJ->second;
+
+			for (const auto& [nodeMaskI, dpJtoI] : dpJMap) {
+				
+				// find current dp[D][I] if present
+				auto itDpDtoI = dpSubsetDMap.find(nodeMaskI);
+				int32_t dpDtoI = itDpDtoI == dpSubsetDMap.end() ? MAX_INT : itDpDtoI->second;
+
+				// Candidate cost
+				// if dpJtoI is MAX_INT, it's not useful; but dpJMap values are actual entries, so this is safe.
+				int32_t candidate = dpJtoI == MAX_INT ? MAX_INT : dpJtoI + minDistance;
+				if (candidate < dpDtoI) dpSubsetDMap[nodeMaskI] = candidate;
 			}
 		}
 	}
@@ -77,34 +113,55 @@ std::vector<TCSolver::DreyfusWagner::State> TCSolver::DreyfusWagner::Solve(const
 	}
 
 	// 7. For each node (J)...
-	uint64_t rootTerminalMask = Graph::HEX_ENCODINGS[rootTerminal];
+	uint128_t rootTerminalMask = Solver::GetMask(rootTerminal, 0);
 	int32_t steinerDistance = MAX_INT;
-	for (uint16_t nodeMaskJ : allNodes) {
+	auto itRoot = dp.find(rootTerminalMask);
+	if (itRoot == dp.end()) throw std::runtime_error("Root terminal not found");
+
+	for (uint128_t nodeMaskJ : allNodes) {
 		int32_t minDistance = MAX_INT;
 
 		// 8. Remove a single terminal (E) from the subset (D)
 		// and find the minimum of distance(E,J) + distance(D-E,J)
 		for (uint64_t terminalE : fullTerminalPositions) {
-			uint64_t subsetDMinusE = fullTerminalMask ^ terminalE;
-			int32_t distanceDMinusEToJ = dp[subsetDMinusE][nodeMaskJ];
-			int32_t distanceEToJ = dp[terminalE][nodeMaskJ];
-			minDistance = std::min(minDistance, distanceDMinusEToJ + distanceEToJ);
+			uint128_t subsetDMinusEMask = {fullTerminalMask ^ terminalE, 0};
+			uint128_t terminalEMask = {terminalE, 0};
+
+			auto itDMinusE = dp.find(subsetDMinusEMask);
+			auto itE = dp.find(terminalEMask);
+			if (itDMinusE == dp.end() || itE == dp.end()) continue;
+			
+			auto itDMinusEtoJ = itDMinusE->second.find(nodeMaskJ);
+			auto itEtoJ = itE->second.find(nodeMaskJ);
+			if (itDMinusEtoJ == itDMinusE->second.end() || itEtoJ == itE->second.end()) continue;
+			
+			int32_t distanceDMinusEtoJ = itDMinusEtoJ->second;
+			int32_t distanceEtoJ = itEtoJ->second;
+
+			if (distanceDMinusEtoJ != MAX_INT && distanceEtoJ != MAX_INT)
+				minDistance = std::min(minDistance, distanceDMinusEtoJ + distanceEtoJ);
 		}
 
 		// 9. Find the minimum of dp[root][J] + min(dp[D-E][J] + dp[E][J])
-		steinerDistance = std::min(steinerDistance, dp[rootTerminalMask][nodeMaskJ] + minDistance);
+		auto itRootToJ = itRoot->second.find(nodeMaskJ);
+		if (itRootToJ == itRoot->second.end()) continue;
+		int32_t distanceRootToJ = itRootToJ->second;
+
+		if (distanceRootToJ != MAX_INT && minDistance != MAX_INT)
+			steinerDistance = std::min(steinerDistance, distanceRootToJ + minDistance);
 	}
 
 	std::cout << "Steiner distance: " << steinerDistance << std::endl;
 
-	return {};
+	return steinerDistance < MAX_INT;
 }
 
 void TCSolver::DreyfusWagner::Dijkstra(
 	const Graph& graph,
-	const std::unordered_set<uint16_t>& initialNodes,
-	std::unordered_map<uint64_t, std::unordered_map<uint16_t, int32_t>>& dp,
-	std::unordered_set<uint16_t>& allNodes
+	const std::unordered_set<Hex>& initialPositions,
+	std::unordered_map<uint128_t, std::unordered_map<uint128_t, int32_t>>& dp,
+	std::unordered_map<uint128_t, uint128_t>& parents,
+	std::unordered_set<uint128_t>& allNodes
 ) {
 	static constexpr int32_t MAX_INT = std::numeric_limits<int32_t>::max();
 
@@ -115,9 +172,8 @@ void TCSolver::DreyfusWagner::Dijkstra(
 	uint64_t placementMask = graph.GetPlacementMask();
 
 	// TODO: parallelize
-	for (uint16_t terminalNodeMask : initialNodes) {
-		int32_t terminalAspectId = static_cast<int32_t>(terminalNodeMask >> 8);
-		Hex terminalPosition = Graph::HEX_DECODINGS_PACKED[(terminalNodeMask & 0xFF) - 1];
+	for (Hex terminalPosition : initialPositions) {
+		int32_t terminalAspectId = graph.At(terminalPosition).GetAspectId();
 		openSet.push({
 			0,
 			terminalAspectId,
@@ -125,8 +181,17 @@ void TCSolver::DreyfusWagner::Dijkstra(
 			placementMask
 		});
 
-		uint64_t terminalPositionMask = Graph::HEX_ENCODINGS[terminalPosition];
-		dp[terminalPositionMask][terminalNodeMask] = 0;
+		uint128_t pureTerminalMask = Solver::GetMask(terminalPosition, 0);
+		uint128_t terminalNodeMask = Solver::GetMask(placementMask, terminalAspectId);
+
+		// Ensure inner maps exist and reserve a bit. Needs more testing to figure out heuristic reserve amount
+		std::unordered_map<uint128_t, int32_t>& dpPure = dp[pureTerminalMask];
+		dpPure.reserve(1024);
+		std::unordered_map<uint128_t, int32_t>& dpTerminal = dp[terminalNodeMask];
+		dpTerminal.reserve(1024);
+
+		dp[pureTerminalMask][terminalNodeMask] = 0;
+		dp[terminalNodeMask][terminalNodeMask] = 0;
 
 		while (!openSet.empty()) {
 			State currentState = openSet.top();
@@ -136,6 +201,7 @@ void TCSolver::DreyfusWagner::Dijkstra(
 				if (Hex::Distance(neighbor, Hex::ZERO) >= graph.GetSideLength()) continue;
 
 				uint64_t neighborPositionMask = Graph::HEX_ENCODINGS.at(neighbor);
+				uint64_t combinedMask = currentState.placementMask | neighborPositionMask;
 
 				if (currentState.placementMask & neighborPositionMask) {
 					// If we're not looking at a terminal (aka backtracking)
@@ -144,37 +210,63 @@ void TCSolver::DreyfusWagner::Dijkstra(
 					int32_t existingAspect = graph.At(neighbor).GetAspectId();
 					if (!aspects[currentState.aspectId].GetLinks().contains(existingAspect)) continue;
 
-					uint16_t neighborNodeMask = Solver::GetMask(neighbor, existingAspect);
-					const auto it = dp[terminalPositionMask].find(neighborNodeMask);
-					int32_t dpCost = it == dp[terminalPositionMask].end() ?  MAX_INT : it->second;
-					
+					uint128_t neighborNodeMask = Solver::GetMask(combinedMask, existingAspect);
+					auto itPureToNeighbor = dpPure.find(neighborNodeMask);
+					int32_t dpCost = itPureToNeighbor == dpPure.end() ? MAX_INT : itPureToNeighbor->second;
+
 					int32_t cost = currentState.cost; // Don't add anything -- Using an existing aspect not placed by us
 					if (dpCost <= cost) continue;
 
-					dp[terminalPositionMask][neighborNodeMask] = cost;
+					dpPure[neighborNodeMask] = cost;
+					dp[neighborNodeMask][terminalNodeMask] = cost;
+					auto dpNeighbor = dp.find(neighborNodeMask);
+					if (dpNeighbor == dp.end()) throw std::runtime_error("dp neighbor not found");
+
+					uint128_t parentMask = Solver::GetMask(currentState.placementMask, currentState.aspectId);
+					parents[neighborNodeMask] = parentMask;
+
+					// Fill reverse cumulative costs along parent chain
+					while (parentMask != terminalNodeMask) {
+						dpNeighbor->second[parentMask] = cost - dpPure[parentMask];
+						parentMask = parents[parentMask];
+					}
+
 					openSet.push({
 						cost,
 						existingAspect,
 						neighbor,
-						currentState.placementMask | neighborPositionMask
+						combinedMask
 					});
 					allNodes.insert(neighborNodeMask);
 				} else {
 					for (int32_t aspectId : aspects[currentState.aspectId].GetLinks()) {
-						uint16_t neighborNodeMask = Solver::GetMask(neighbor, aspectId);
+						uint128_t neighborNodeMask = Solver::GetMask(combinedMask, aspectId);
+						
+						auto itPureToNeighbor = dpPure.find(neighborNodeMask);
+						int32_t dpCost = itPureToNeighbor == dpPure.end() ? MAX_INT : itPureToNeighbor->second;
+
 						int32_t cost = currentState.cost + 1;
-
-						const auto it = dp[terminalPositionMask].find(neighborNodeMask);
-						int32_t dpCost = it == dp[terminalPositionMask].end() ?  MAX_INT : it->second;
-
 						if (dpCost <= cost) continue;
 
-						dp[terminalPositionMask][neighborNodeMask] = cost;
+						dpPure[neighborNodeMask] = cost;
+						dp[neighborNodeMask][terminalNodeMask] = cost;
+						auto dpNeighbor = dp.find(neighborNodeMask);
+						if (dpNeighbor == dp.end()) throw std::runtime_error("dp neighbor not found");
+
+						uint128_t parentMask = Solver::GetMask(currentState.placementMask, currentState.aspectId);
+						parents[neighborNodeMask] = parentMask;
+
+						// Fill reverse cumulative costs along parent chain
+						while (parentMask != terminalNodeMask) {
+							dpNeighbor->second[parentMask] = cost - dpPure[parentMask];
+							parentMask = parents[parentMask];
+						}
+
 						openSet.push({
 							cost,
 							aspectId,
 							neighbor,
-							currentState.placementMask | neighborPositionMask
+							combinedMask
 						});
 						allNodes.insert(neighborNodeMask);
 					}
@@ -197,8 +289,7 @@ constexpr TCSolver::DreyfusWagner::TerminalSubsets_t TCSolver::DreyfusWagner::Ge
 	}
 
 	TerminalSubsets_t subsets;
-
-	for (int32_t i = 1; i < (1 << numTerminals) - 1; ++i) {
+	for (int32_t i = 1; i <= (1 << numTerminals) - 1; ++i) {
 		uint64_t subsetMask = 0;
 		for (int32_t j = 0; j < numTerminals; ++j) {
 			if (i & (1 << j)) subsetMask |= (1 << terminalPositions[j]);
